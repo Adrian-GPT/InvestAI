@@ -1,0 +1,257 @@
+[
+  {
+    "id": 1,
+    "titulo": "Fortuna Silver Mines Reports Record Q1 2026 Silver Production; EPS Beats Consensus by 18%",
+    "fuente": "Reuters Mining",
+    "fecha": "2026-06-12",
+    "resumen": "Fortuna Silver Mines posted record silver output of 2.4 million ounces in Q1 2026, surpassing analyst estimates by a wide margin. The company raised its full-year guidance and reported strong operating cash flows, driven by higher silver prices and remarkable efficiency gains at its Lindero and San Jose mines. Analysts at RBC upgraded the stock to Outperform citing exceptional operational execution.",
+    "ticker": "FSM",
+    "sentimiento": "BULLISH",
+    "vader": {
+      "pos": 0.144,
+      "neg": 0.0,
+      "neu": 0.856,
+      "compound": 0.896
+    },
+    "gpt4o": "BULLISH",
+    "acuerdo": true
+  },
+  {
+    "id": 2,
+    "titulo": "Mexican Environmental Agency Revokes FSM Operating Permit at San Jose Mine; Shares Plunge 7%",
+    "fuente": "Bloomberg Mining",
+    "fecha": "2026-06-09",
+    "resumen": "Mexico's SEMARNAT suspended Fortuna Silver's San Jose mine operations following allegations of soil contamination near community water sources. The company faces a mandatory 60-day environmental audit and potential fines. Shares fell sharply on the news as investors fear prolonged production shutdowns and mounting legal liability. The situation remains critical with no resolution timeline confirmed.",
+    "ticker": "FSM",
+    "sentimiento": "BEARISH",
+    "vader": {
+      "pos": 0.093,
+      "neg": 0.162,
+      "neu": 0.746,
+      "compound": -0.751
+    },
+    "gpt4o": "BEARISH",
+    "acuerdo": true
+  },
+  {
+    "id": 3,
+    "titulo": "Fortuna Silver CEO to Present Capital Allocation Strategy at Denver Gold Forum 2026",
+    "fuente": "PR Newswire",
+    "fecha": "2026-06-05",
+    "resumen": "Fortuna Silver Mines CEO Jorge Ganoza will address investors at the upcoming Denver Gold Forum, outlining the company's five-year capital allocation roadmap and exploration pipeline. The company will provide routine updates on its West Africa expansion and 2026-2027 production targets. Market reaction was muted as the presentation contains no material guidance changes.",
+    "ticker": "FSM",
+    "sentimiento": "BEARISH",
+    "vader": {
+      "pos": 0.028,
+      "neg": 0.033,
+      "neu": 0.939,
+      "compound": -0.077
+    },
+    "gpt4o": "NEUTRAL",
+    "acuerdo": false
+  },
+  {
+    "id": 4,
+    "titulo": "Volcan Mining Workers Strike Enters Day 12; Zinc Output at Cerro de Pasco Falls 40%",
+    "fuente": "El Comercio Mining",
+    "fecha": "2026-06-11",
+    "resumen": "A labor strike at Volcan's Cerro de Pasco operations entered its 12th day with no resolution in sight. Zinc production has dropped approximately 40% from planned output levels. The company and union representatives remain far apart on wage demands and safety protocols, raising serious concerns among investors about Q2 deliveries and contractual penalties. The dispute threatens to damage Volcan's relationships with key off-takers.",
+    "ticker": "VOLCABC1.LM",
+    "sentimiento": "BEARISH",
+    "vader": {
+      "pos": 0.032,
+      "neg": 0.173,
+      "neu": 0.795,
+      "compound": -0.848
+    },
+    "gpt4o": "BEARISH",
+    "acuerdo": true
+  },
+  {
+    "id": 5,
+    "titulo": "Volcan Reports Strongest Quarterly Earnings in Five Years as Zinc Surges Past $3,500 per Tonne",
+    "fuente": "Gestión Finanzas",
+    "fecha": "2026-06-07",
+    "resumen": "Volcan Compañía Minera delivered its best quarterly financial performance since 2021, driven by zinc prices surpassing $3,500 per tonne. The company reported EBITDA of $185 million, a remarkable 44% year-over-year increase. Management raised its annual zinc sales guidance and announced plans to accelerate the Chungar mine expansion, reinforcing investor confidence in long-term growth prospects.",
+    "ticker": "VOLCABC1.LM",
+    "sentimiento": "BULLISH",
+    "vader": {
+      "pos": 0.257,
+      "neg": 0.0,
+      "neu": 0.743,
+      "compound": 0.964
+    },
+    "gpt4o": "BULLISH",
+    "acuerdo": true
+  },
+  {
+    "id": 6,
+    "titulo": "Volcan Board Approves Dividend Reinvestment Plan; 2026 Capital Expenditure Guidance Maintained",
+    "fuente": "BVL Noticias",
+    "fecha": "2026-06-03",
+    "resumen": "Volcan's board of directors approved a dividend reinvestment program effective Q3 2026, allowing shareholders to reinvest dividends into new shares at a 3% discount. The company reaffirmed its $210 million capital expenditure plan for the year, with no major project additions or cancellations announced. Analysts noted the decision as routine corporate governance with neutral near-term market implications.",
+    "ticker": "VOLCABC1.LM",
+    "sentimiento": "BULLISH",
+    "vader": {
+      "pos": 0.146,
+      "neg": 0.03,
+      "neu": 0.824,
+      "compound": 0.823
+    },
+    "gpt4o": "BULLISH",
+    "acuerdo": true
+  },
+  {
+    "id": 7,
+    "titulo": "Gold Breaks Historic $3,200 per Ounce Barrier; Barrick Gold Raises Full-Year Guidance by 8%",
+    "fuente": "Financial Post",
+    "fecha": "2026-06-12",
+    "resumen": "Gold surged to a historic $3,200 per ounce, propelled by US dollar weakness and rising geopolitical tensions. Barrick Gold capitalized on higher prices, revising its full-year production guidance upward by 8% to 4.6 million gold-equivalent ounces. Analysts at Scotiabank upgraded the stock to Outperform with a C$35 price target, citing exceptional cash flow generation and strengthened balance sheet position.",
+    "ticker": "ABX.TO",
+    "sentimiento": "BEARISH",
+    "vader": {
+      "pos": 0.036,
+      "neg": 0.091,
+      "neu": 0.872,
+      "compound": -0.494
+    },
+    "gpt4o": "BEARISH",
+    "acuerdo": true
+  },
+  {
+    "id": 8,
+    "titulo": "Tanzania Orders Suspension of Barrick North Mara Mine Over Alleged Cyanide Contamination",
+    "fuente": "Africa Business Report",
+    "fecha": "2026-06-08",
+    "resumen": "Tanzanian environmental authorities issued a suspension order for Barrick's North Mara gold mine following allegations of cyanide leakage into nearby rivers, threatening local communities. The mine contributes roughly 200,000 ounces annually. Barrick denied the accusations and filed for an emergency injunction, but significant uncertainty surrounding the dispute rattled investors and weighed heavily on the stock price.",
+    "ticker": "ABX.TO",
+    "sentimiento": "BEARISH",
+    "vader": {
+      "pos": 0.029,
+      "neg": 0.186,
+      "neu": 0.785,
+      "compound": -0.876
+    },
+    "gpt4o": "BEARISH",
+    "acuerdo": true
+  },
+  {
+    "id": 9,
+    "titulo": "Barrick Gold Signs MoU with Saudi Arabia to Develop New Gold Project in Arabian Shield",
+    "fuente": "Reuters Commodities",
+    "fecha": "2026-06-10",
+    "resumen": "Barrick Gold entered a memorandum of understanding with Saudi Arabia's Public Investment Fund to explore and develop gold deposits in the Arabian Shield region. The joint venture could unlock significant reserves with estimated potential of 2 million ounces at industry- leading grades. The partnership received strong positive market reaction, adding strategic diversification and opening a major growth opportunity for Barrick's portfolio.",
+    "ticker": "ABX.TO",
+    "sentimiento": "BULLISH",
+    "vader": {
+      "pos": 0.172,
+      "neg": 0.0,
+      "neu": 0.828,
+      "compound": 0.92
+    },
+    "gpt4o": "BULLISH",
+    "acuerdo": true
+  },
+  {
+    "id": 10,
+    "titulo": "Flash Floods Force Shutdown of BVN Uchucchacua Silver Mine; Production Outlook Slashed 12%",
+    "fuente": "Peru Reports",
+    "fecha": "2026-06-11",
+    "resumen": "Severe flash flooding in Oyón province forced Buenaventura to halt operations at its Uchucchacua silver mine, one of the largest primary silver producers in Peru. The company drastically slashed its 2026 silver production outlook by 12%, sending shares down 5.4%. The recovery timeline remains uncertain pending critical safety and infrastructure assessments, adding pressure to an already challenging operational year.",
+    "ticker": "BVN",
+    "sentimiento": "BEARISH",
+    "vader": {
+      "pos": 0.078,
+      "neg": 0.19,
+      "neu": 0.732,
+      "compound": -0.818
+    },
+    "gpt4o": "BEARISH",
+    "acuerdo": true
+  },
+  {
+    "id": 11,
+    "titulo": "Buenaventura Q2 2026 Production Beats All Estimates; Silver and Gold Output Surge 22% YoY",
+    "fuente": "Semana Económica",
+    "fecha": "2026-06-04",
+    "resumen": "Buenaventura released outstanding preliminary Q2 2026 production data, showing combined silver and gold output up 22% year-over-year across all operating segments. The exceptional results exceeded consensus estimates significantly. The company attributed the gains to operational improvements at Yumpag, La Zanja, and Tambomayo mines, positioning BVN for what could be a record full-year performance in its history.",
+    "ticker": "BVN",
+    "sentimiento": "BULLISH",
+    "vader": {
+      "pos": 0.116,
+      "neg": 0.0,
+      "neu": 0.884,
+      "compound": 0.827
+    },
+    "gpt4o": "BULLISH",
+    "acuerdo": true
+  },
+  {
+    "id": 12,
+    "titulo": "BVN Submits Trapiche Copper Project Environmental Study; Ministry Decision Expected in 90 Days",
+    "fuente": "MEM Peru Official",
+    "fecha": "2026-06-01",
+    "resumen": "Buenaventura confirmed submission of the environmental impact study for its Trapiche copper project to Peru's Ministry of Energy and Mines. A regulatory decision is expected within 90 days. The project, if approved, would add significant copper production capacity from 2028 onward. Market reaction remained muted as investors await regulatory clarity before pricing in potential growth from the project.",
+    "ticker": "BVN",
+    "sentimiento": "BULLISH",
+    "vader": {
+      "pos": 0.173,
+      "neg": 0.0,
+      "neu": 0.827,
+      "compound": 0.886
+    },
+    "gpt4o": "BULLISH",
+    "acuerdo": true
+  },
+  {
+    "id": 13,
+    "titulo": "BHP Posts Record Iron Ore Shipments in June Quarter; EV-Driven Copper Demand Hits 10-Year High",
+    "fuente": "ASX Company News",
+    "fecha": "2026-06-12",
+    "resumen": "BHP Group reported record iron ore shipments from its Pilbara operations and a decade-high in copper demand driven by global electric vehicle adoption and energy transition spending. The company reaffirmed full-year copper production guidance of 1.9 million tonnes. Analysts at UBS raised their 12-month price target by 14% following the exceptional quarterly update, citing BHP's unmatched operational leverage to the energy transition.",
+    "ticker": "BHP",
+    "sentimiento": "BULLISH",
+    "vader": {
+      "pos": 0.053,
+      "neg": 0.054,
+      "neu": 0.893,
+      "compound": 0.226
+    },
+    "gpt4o": "BEARISH",
+    "acuerdo": false
+  },
+  {
+    "id": 14,
+    "titulo": "BHP Raises Final Dividend 15% After Delivering Record Free Cash Flow of $18.4 Billion",
+    "fuente": "Bloomberg Markets",
+    "fecha": "2026-06-06",
+    "resumen": "BHP announced a 15% increase in its final dividend to $1.35 per share after reporting full-year free cash flow of $18.4 billion, exceeding all analyst forecasts. CEO Mike Henry credited disciplined capital allocation and exceptionally favorable commodity prices. The share buyback program was extended by $4 billion, signaling strong management confidence in future cash generation and reinforcing BHP's status as a top-tier dividend payer.",
+    "ticker": "BHP",
+    "sentimiento": "BULLISH",
+    "vader": {
+      "pos": 0.278,
+      "neg": 0.0,
+      "neu": 0.722,
+      "compound": 0.974
+    },
+    "gpt4o": "BULLISH",
+    "acuerdo": true
+  },
+  {
+    "id": 15,
+    "titulo": "China Steel Production Curbs Pressure Iron Ore Futures; BHP and Rio Tinto Hit Hardest",
+    "fuente": "Reuters Commodities",
+    "fecha": "2026-06-02",
+    "resumen": "Iron ore futures fell more than 6% after China's government announced new production caps on steel mills in Hebei province to combat winter pollution levels. BHP and Rio Tinto saw their shares decline sharply as investors priced in lower demand for iron ore through year-end. Analysts warned the restrictions could extend into 2027, potentially eroding earnings and forcing dividend guidance revisions for major iron ore producers.",
+    "ticker": "BHP",
+    "sentimiento": "BEARISH",
+    "vader": {
+      "pos": 0.045,
+      "neg": 0.119,
+      "neu": 0.836,
+      "compound": -0.67
+    },
+    "gpt4o": "BEARISH",
+    "acuerdo": true
+  }
+]

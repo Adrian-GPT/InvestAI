@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InvestAI — Predicción SVC</title>
+
+<!-- Inter desde Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<style>
+/* =========================================================
+   VARIABLES Y RESET — misma paleta que investai_auth.html
+   ========================================================= */
+:root {
+  --azul:        #1F3864;
+  --azul-hover:  #162a50;
+  --dorado:      #C5961A;
+  --dorado-bg:   #FFFBF0;
+  --blanco:      #FFFFFF;
+  --fondo:       #F5F7FB;
+  --panel:       #FFFFFF;
+  --borde:       #E2E8F3;
+  --texto:       #0D1B33;
+  --suave:       #6B7A99;
+
+  --buy:         #26A69A;
+  --buy-bg:      #E6F7F6;
+  --sell:        #EF5350;
+  --sell-bg:     #FDECEA;
+  --hold:        #F59E0B;
+  --hold-bg:     #FFFBEB;
+
+  --r:  10px;
+  --rl: 14px;
+  --sh-s: 0 1px 4px rgba(31,56,100,.08);
+  --sh-m: 0 4px 18px rgba(31,56,100,.11);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+  font-size: 14px;
+  line-height: 1.4;
+  min-height: 100vh;
+}
+
+/* =========================================================
+   OVERLAY DE CARGA GLOBAL
+   ========================================================= */
+#app-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--fondo);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px;
+  transition: opacity .5s;
+}
+#app-overlay.oculto { opacity: 0; pointer-events: none; }
+
+.ov-logo {
+  font-size: 22px; font-weight: 800; color: var(--azul);
+  display: flex; align-items: center; gap: 10px;
+}
+.ov-logo em { color: var(--dorado); font-style: normal; }
+.ov-barra  { width: 220px; height: 4px; background: var(--borde); border-radius: 4px; overflow: hidden; }
+.ov-progreso {
+  height: 100%;
+  background: linear-gradient(90deg, var(--azul), var(--dorado));
+  border-radius: 4px;
+  animation: progreso 2.2s ease-in-out forwards;
+}
+@keyframes progreso { from { width:0; } to { width:100%; } }
+.ov-texto { font-size: 12px; color: var(--suave); letter-spacing: 0.4px; }
+
+/* =========================================================
+   NAVBAR — idéntico al dashboard de mercado
+   ========================================================= */
+.navbar {
+  background: var(--azul);
+  color: var(--blanco);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 22px; height: 52px;
+  box-shadow: 0 2px 14px rgba(0,0,0,.20);
+  position: sticky; top: 0; z-index: 200;
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 800; font-size: 17px; letter-spacing: -.3px;
+}
+.nav-brand em  { color: var(--dorado); font-style: normal; }
+.nav-badge {
+  background: rgba(197,150,26,.2);
+  border: 1px solid rgba(197,150,26,.5);
+  color: var(--dorado);
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 20px; letter-spacing: .6px;
+}
+.nav-r { display: flex; align-items: center; gap: 18px; }
+
+/* Indicador de conexión en vivo */
+.live-ind {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: rgba(255,255,255,.72);
+}
+.live-ind::before {
+  content:''; width:8px; height:8px; border-radius:50%;
+  background:#4ADE80;
+  box-shadow: 0 0 0 2px rgba(74,222,128,.35);
+  animation: pulso 1.7s ease-in-out infinite;
+}
+@keyframes pulso {
+  0%,100% { box-shadow: 0 0 0 2px rgba(74,222,128,.35); }
+  50%      { box-shadow: 0 0 0 6px rgba(74,222,128,.0); }
+}
+.reloj { font-size:12px; color:rgba(255,255,255,.55); font-variant-numeric: tabular-nums; }
+
+/* =========================================================
+   LAYOUT PRINCIPAL
+   ========================================================= */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 14px;
+  padding: 14px 18px 24px;
+}
+.col-g { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.col-p { display: flex; flex-direction: column; gap: 12px; }
+
+/* =========================================================
+   TARJETAS GENÉRICAS
+   ========================================================= */
+.pcard {
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-radius: var(--rl);
+  overflow: hidden;
+  box-shadow: var(--sh-s);
+}
+.pcard-tit {
+  background: var(--azul); color: var(--blanco);
+  font-size: 11px; font-weight: 700; letter-spacing: .6px;
+  text-transform: uppercase;
+  padding: 9px 14px;
+}
+
+/* =========================================================
+   BARRA DE CONTROLES (ticker + info modelo)
+   ========================================================= */
+.controles {
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-radius: var(--rl);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  box-shadow: var(--sh-s);
+}
+.ctrl-g { display: flex; flex-direction: column; gap: 3px; }
+.ctrl-lbl {
+  font-size: 10px; font-weight: 700; color: var(--suave);
+  letter-spacing: .5px; text-transform: uppercase;
+}
+.ctrl-sel {
+  border: 1.5px solid var(--borde); border-radius: 8px;
+  padding: 6px 28px 6px 10px;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  color: var(--texto); background: var(--fondo);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231F3864' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center;
+  appearance: none; cursor: pointer; outline: none;
+  transition: border-color .2s, box-shadow .2s; min-width: 155px;
+}
+.ctrl-sel:focus { border-color: var(--azul); box-shadow: 0 0 0 3px rgba(31,56,100,.10); }
+
+.sep { width:1px; height:34px; background:var(--borde); flex-shrink:0; }
+
+/* Chips de hiperparámetros del modelo */
+.hparam-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.chip {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1.5px solid var(--borde);
+  font-size: 11px; font-weight: 600; color: var(--suave);
+  background: var(--fondo);
+  font-family: 'Courier New', monospace;
+}
+.chip span { color: var(--azul); }
+
+/* =========================================================
+   GRÁFICO DE PRECIOS
+   ========================================================= */
+.chart-card {
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-radius: var(--rl);
+  overflow: hidden;
+  box-shadow: var(--sh-m);
+  position: relative;
+}
+.chart-hdr {
+  padding: 13px 16px 10px;
+  border-bottom: 1px solid var(--borde);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.hdr-ticker { font-size: 19px; font-weight: 800; color: var(--azul); letter-spacing:-.4px; }
+.hdr-precio { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hdr-var {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+}
+.hdr-var.pos { background: var(--buy-bg);  color: var(--buy);  }
+.hdr-var.neg { background: var(--sell-bg); color: var(--sell); }
+
+/* Leyenda de marcadores (debajo del header) */
+.leyenda-marcadores {
+  display: flex; gap: 16px; align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--borde);
+  background: var(--fondo);
+}
+.ley-item { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; }
+.tri { width: 0; height: 0; flex-shrink: 0; }
+.tri-buy  { border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:10px solid var(--buy); }
+.tri-sell { border-left:6px solid transparent; border-right:6px solid transparent; border-top:10px solid var(--sell); }
+.tri-hold { width:10px; height:10px; border-radius:50%; background:var(--suave); }
+.ley-buy  { color: var(--buy);  }
+.ley-sell { color: var(--sell); }
+.ley-hold { color: var(--suave); }
+
+/* Spinner de recarga interna */
+.chart-loader {
+  position: absolute; inset: 0; z-index: 10;
+  background: rgba(255,255,255,.82);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--rl); transition: opacity .3s;
+}
+.chart-loader.oculto { opacity:0; pointer-events:none; }
+.ring {
+  width:34px; height:34px;
+  border:3px solid var(--borde); border-top-color: var(--azul);
+  border-radius:50%; animation: giro .7s linear infinite;
+}
+@keyframes giro { to { transform: rotate(360deg); } }
+
+#plot-precio { width:100%; height:420px; }
+
+/* =========================================================
+   SEMÁFORO DE SEÑAL
+   ========================================================= */
+.senal-body { padding: 16px 14px 18px; }
+.semaforo {
+  display: flex; justify-content: center; align-items: center;
+  gap: 12px; margin-bottom: 14px;
+}
+.sdot {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  transition: transform .3s, box-shadow .3s;
+}
+.sdot.off    { background: var(--borde); opacity: .35; }
+.sdot.buy  {
+  background: var(--buy);
+  box-shadow: 0 0 0 6px var(--buy-bg), 0 0 20px rgba(38,166,154,.40);
+  transform: scale(1.14);
+}
+.sdot.sell {
+  background: var(--sell);
+  box-shadow: 0 0 0 6px var(--sell-bg), 0 0 20px rgba(239,83,80,.40);
+  transform: scale(1.14);
+}
+.sdot.hold {
+  background: var(--hold);
+  box-shadow: 0 0 0 6px var(--hold-bg), 0 0 20px rgba(245,158,11,.40);
+  transform: scale(1.14);
+}
+.senal-tit {
+  text-align: center; font-size: 15px; font-weight: 700; letter-spacing: .4px;
+}
+.senal-tit.buy  { color: var(--buy);  }
+.senal-tit.sell { color: var(--sell); }
+.senal-tit.hold { color: #D97706; }
+.senal-desc {
+  font-size: 11.5px; color: var(--suave);
+  text-align: center; margin-top: 6px; line-height: 1.5;
+}
+
+/* Separador interno */
+.senal-sep { height:1px; background: var(--borde); margin: 12px 0; }
+
+/* Probabilidades del SVC */
+.prob-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.prob-item {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 8px;
+  border: 1.5px solid var(--borde);
+}
+.prob-item.buy  { border-color: var(--buy);  background: var(--buy-bg);  }
+.prob-item.sell { border-color: var(--sell); background: var(--sell-bg); }
+.prob-item.hold { border-color: var(--hold); background: var(--hold-bg); }
+.prob-lbl  { font-size: 10px; font-weight: 700; letter-spacing:.4px; margin-bottom:3px; }
+.prob-lbl.buy  { color: var(--buy);  }
+.prob-lbl.sell { color: var(--sell); }
+.prob-lbl.hold { color: #D97706; }
+.prob-val  { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* =========================================================
+   PANEL DE MÉTRICAS
+   ========================================================= */
+.metricas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.met-item {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--borde);
+  border-right: 1px solid var(--borde);
+}
+.met-item:nth-child(2n) { border-right: none; }
+.met-item:nth-last-child(-n+2) { border-bottom: none; }
+.met-lbl  { font-size: 9.5px; font-weight:700; color:var(--suave); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+.met-val  { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--azul); }
+.met-bar  { height:4px; border-radius:4px; background: var(--borde); margin-top:6px; overflow:hidden; }
+.met-fill { height:100%; border-radius:4px; transition: width .8s ease; }
+
+/* =========================================================
+   MATRIZ DE CONFUSIÓN
+   ========================================================= */
+.confusion-body { padding: 14px; }
+.confusion-caption {
+  font-size: 10.5px; color: var(--suave); text-align: center;
+  margin-bottom: 10px; font-weight: 500;
+}
+.confusion-wrap {
+  display: flex; gap: 10px; align-items: flex-start;
+}
+/* Etiquetas del eje Y */
+.c-ylabels {
+  display: flex; flex-direction: column;
+  justify-content: space-around;
+  padding-top: 26px;  /* desplazada hacia abajo para alinearse con las celdas */
+  gap: 0;
+}
+.c-ylabel {
+  font-size: 10px; font-weight: 700; color: var(--suave);
+  writing-mode: horizontal-tb;
+  padding: 6px 0;
+  height: 52px;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 6px;
+}
+/* Tabla + cabeceras */
+.c-table-wrap { flex: 1; }
+.c-xlabels {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 3px; margin-bottom: 3px;
+}
+.c-xlabel {
+  text-align: center; font-size: 10px; font-weight: 700; color: var(--suave);
+}
+.c-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 3px;
+}
+.c-cell {
+  border-radius: 7px;
+  height: 52px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px;
+  transition: transform .15s;
+}
+.c-cell:hover { transform: scale(1.04); cursor: default; }
+.c-val  { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.c-pct  { font-size: 10px; font-weight: 600; opacity: .8; }
+
+/* Escala de calor: las celdas de la diagonal son las TP */
+.c-cell.diag { box-shadow: 0 0 0 2px rgba(31,56,100,.18) inset; }
+
+/* eje Y rotado */
+.c-yaxis-lbl {
+  font-size: 9px; font-weight:700; color:var(--suave); letter-spacing:.5px;
+  text-transform: uppercase;
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  margin-right: 2px; align-self: center;
+}
+.c-xaxis-lbl {
+  font-size: 9px; font-weight:700; color:var(--suave); letter-spacing:.5px;
+  text-transform: uppercase;
+  text-align: center; margin-top: 6px;
+}
+
+/* =========================================================
+   HISTORIAL DE SEÑALES
+   ========================================================= */
+.hist-body { padding: 0; max-height: 230px; overflow-y: auto; }
+.hist-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--borde);
+  font-size: 12px;
+  transition: background .12s;
+}
+.hist-row:last-child { border-bottom: none; }
+.hist-row:hover { background: var(--fondo); }
+.hist-fecha { color: var(--suave); font-size: 11px; width: 78px; flex-shrink:0; }
+.hist-ticker { font-weight: 700; color: var(--azul); width: 44px; flex-shrink:0; }
+.hist-badge {
+  padding: 2px 9px; border-radius: 20px;
+  font-size: 10.5px; font-weight: 700; letter-spacing:.3px;
+}
+.hist-badge.buy  { background: var(--buy-bg);  color: var(--buy);  }
+.hist-badge.sell { background: var(--sell-bg); color: var(--sell); }
+.hist-badge.hold { background: var(--hold-bg); color: #D97706; }
+.hist-prob { margin-left: auto; font-size: 11px; color: var(--suave); }
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  #plot-precio { height: 360px; }
+}
+@media (max-width: 540px) {
+  #plot-precio { height: 300px; }
+  .metricas-grid { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+  OVERLAY DE CARGA GLOBAL
+============================================================ -->
+<div id="app-overlay">
+  <div class="ov-logo">
+    <!-- SVG logo (velas + IA) igual que en los otros módulos -->
+    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+      <rect width="40" height="40" rx="9" fill="#C5961A"/>
+      <rect x="9"  y="10" width="4" height="20" rx="2" fill="white" opacity=".3"/>
+      <rect x="9"  y="15" width="4" height="10" rx="1.5" fill="white"/>
+      <rect x="18" y="6"  width="4" height="28" rx="2" fill="white" opacity=".3"/>
+      <rect x="18" y="11" width="4" height="14" rx="1.5" fill="#1F3864"/>
+      <rect x="27" y="12" width="4" height="18" rx="2" fill="white" opacity=".3"/>
+      <rect x="27" y="17" width="4" height="8"  rx="1.5" fill="white"/>
+    </svg>
+    Invest<em>AI</em>
+  </div>
+  <div class="ov-barra"><div class="ov-progreso"></div></div>
+  <div class="ov-texto">Cargando modelo SVC · kernel RBF…</div>
+</div>
+
+<!-- ============================================================
+  NAVBAR
+============================================================ -->
+<nav class="navbar">
+  <div class="nav-brand">
+    <svg width="24" height="24" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+      <rect width="40" height="40" rx="9" fill="#C5961A"/>
+      <rect x="9"  y="10" width="4" height="20" rx="2" fill="white" opacity=".3"/>
+      <rect x="9"  y="15" width="4" height="10" rx="1.5" fill="white"/>
+      <rect x="18" y="6"  width="4" height="28" rx="2" fill="white" opacity=".3"/>
+      <rect x="18" y="11" width="4" height="14" rx="1.5" fill="#1F3864"/>
+      <rect x="27" y="12" width="4" height="18" rx="2" fill="white" opacity=".3"/>
+      <rect x="27" y="17" width="4" height="8"  rx="1.5" fill="white"/>
+    </svg>
+    Invest<em>AI</em>
+    <span class="nav-badge">SVC · PREDICCIÓN</span>
+  </div>
+  <div class="nav-r">
+    <div class="live-ind">Modelo activo</div>
+    <div class="reloj" id="reloj">--:--:--</div>
+  </div>
+</nav>
+
+<!-- ============================================================
+  CONTENIDO PRINCIPAL
+============================================================ -->
+<div class="main">
+
+  <!-- ════════════════════════════════════════════
+       COLUMNA IZQUIERDA — Gráfico + Métricas
+  ════════════════════════════════════════════ -->
+  <div class="col-g">
+
+    <!-- Controles: selector de ticker + hiperparámetros -->
+    <div class="controles">
+      <div class="ctrl-g">
+        <span class="ctrl-lbl">Activo</span>
+        <select class="ctrl-sel" id="sel-ticker" onchange="cambiarTicker(this.value)" aria-label="Seleccionar ticker">
+          <option value="AAPL">AAPL — Apple</option>
+          <option value="MSFT">MSFT — Microsoft</option>
+          <option value="GOOGL">GOOGL — Alphabet</option>
+          <option value="TSLA">TSLA — Tesla</option>
+          <option value="NVDA">NVDA — NVIDIA</option>
+          <option value="BTC-USD">BTC-USD — Bitcoin</option>
+          <option value="ETH-USD">ETH-USD — Ethereum</option>
+        </select>
+      </div>
+
+      <div class="sep"></div>
+
+      <!-- Hiperparámetros del SVC (solo informativos, no editables en demo) -->
+      <div class="ctrl-g">
+        <span class="ctrl-lbl">Hiperparámetros SVC</span>
+        <div class="hparam-chips">
+          <div class="chip">kernel=<span>RBF</span></div>
+          <div class="chip">C=<span>1.0</span></div>
+          <div class="chip">gamma=<span>'scale'</span></div>
+          <div class="chip">probability=<span>True</span></div>
+          <div class="chip">ventana=<span>60d</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico de precios con marcadores BUY/SELL/HOLD -->
+    <div class="chart-card">
+      <!-- Spinner interno -->
+      <div class="chart-loader" id="chart-loader">
+        <div class="ring"></div>
+      </div>
+
+      <!-- Cabecera con precio actual -->
+      <div class="chart-hdr">
+        <span class="hdr-ticker" id="hdr-ticker">AAPL</span>
+        <span class="hdr-precio" id="hdr-precio">$—</span>
+        <span class="hdr-var pos" id="hdr-var">+0.00%</span>
+      </div>
+
+      <!-- Leyenda de marcadores -->
+      <div class="leyenda-marcadores">
+        <div class="ley-item"><div class="tri tri-buy"></div>  <span class="ley-buy">BUY</span></div>
+        <div class="ley-item"><div class="tri tri-sell"></div> <span class="ley-sell">SELL</span></div>
+        <div class="ley-item"><div class="tri tri-hold"></div> <span class="ley-hold">HOLD</span></div>
+        <span style="margin-left:auto;font-size:11px;color:var(--suave);">
+          Ventana: 60 días · Clasificador SVC · kernel RBF
+        </span>
+      </div>
+
+      <!-- Plotly se renderiza aquí -->
+      <div id="plot-precio"></div>
+    </div>
+
+    <!-- Panel de métricas del modelo -->
+    <div class="pcard">
+      <div class="pcard-tit">📊 Métricas del Modelo SVC — Conjunto de Prueba (test set)</div>
+      <div class="metricas-grid" id="metricas-grid">
+        <!-- Se genera dinámicamente por JS -->
+      </div>
+    </div>
+
+    <!-- Matriz de confusión -->
+    <div class="pcard">
+      <div class="pcard-tit">🔢 Matriz de Confusión — Predicción vs. Real</div>
+      <div class="confusion-body">
+        <div class="confusion-caption">
+          Filas = Clase real · Columnas = Clase predicha · Diagonal = Predicciones correctas (TP)
+        </div>
+        <!-- Renderizado por JS en #confusion-inner -->
+        <div id="confusion-inner"></div>
+      </div>
+    </div>
+
+  </div><!-- /col-g -->
+
+  <!-- ════════════════════════════════════════════
+       COLUMNA DERECHA — Semáforo + Historial
+  ════════════════════════════════════════════ -->
+  <div class="col-p">
+
+    <!-- Semáforo / señal actual -->
+    <div class="pcard">
+      <div class="pcard-tit">🚦 Señal SVC — Última predicción</div>
+      <div class="senal-body">
+        <div class="semaforo">
+          <div class="sdot off" id="dot-buy">▲</div>
+          <div class="sdot off" id="dot-hold">●</div>
+          <div class="sdot off" id="dot-sell">▼</div>
+        </div>
+        <div class="senal-tit buy" id="senal-tit">—</div>
+        <div class="senal-desc" id="senal-desc">Calculando…</div>
+
+        <div class="senal-sep"></div>
+
+        <!-- Probabilidades por clase -->
+        <div style="font-size:10px;font-weight:700;color:var(--suave);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+          Probabilidades SVC
+        </div>
+        <div class="prob-grid">
+          <div class="prob-item buy">
+            <div class="prob-lbl buy">BUY</div>
+            <div class="prob-val" id="prob-buy">—</div>
+          </div>
+          <div class="prob-item hold">
+            <div class="prob-lbl hold">HOLD</div>
+            <div class="prob-val" id="prob-hold">—</div>
+          </div>
+          <div class="prob-item sell">
+            <div class="prob-lbl sell">SELL</div>
+            <div class="prob-val" id="prob-sell">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial de señales recientes -->
+    <div class="pcard" style="flex:1;">
+      <div class="pcard-tit">🕐 Historial de Señales — Últimas 10</div>
+      <div class="hist-body" id="hist-body">
+        <!-- Generado por JS -->
+      </div>
+    </div>
+
+  </div><!-- /col-p -->
+
+</div><!-- /main -->
+
+<!-- ============================================================
+  PLOTLY desde CDN (al final del body)
+============================================================ -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<!-- ============================================================
+  LÓGICA DE LA APLICACIÓN
+============================================================ -->
+<script>
+/* =================================================================
+   CONFIGURACIÓN DE ACTIVOS
+   (misma base que en investai_market.html para consistencia)
+   ================================================================= */
+const ACTIVOS = {
+  'AAPL':    { nombre:'Apple Inc.',      base:171,   vol:0.015, trend:0.0003 },
+  'MSFT':    { nombre:'Microsoft Corp.', base:378,   vol:0.013, trend:0.0004 },
+  'GOOGL':   { nombre:'Alphabet Inc.',   base:152,   vol:0.016, trend:0.0002 },
+  'TSLA':    { nombre:'Tesla Inc.',      base:245,   vol:0.030, trend:0.0001 },
+  'NVDA':    { nombre:'NVIDIA Corp.',    base:875,   vol:0.025, trend:0.0006 },
+  'BTC-USD': { nombre:'Bitcoin',         base:67000, vol:0.035, trend:0.0002 },
+  'ETH-USD': { nombre:'Ethereum',        base:3500,  vol:0.040, trend:0.0001 },
+};
+
+/* Estado global */
+const E = { ticker:'AAPL', graficado:false, cache:{} };
+
+/* =================================================================
+   PRNG DETERMINISTA (LCG) — misma semilla que el dashboard de mercado
+   para que los precios sean coherentes entre módulos.
+   ================================================================= */
+function makePRNG(seed) {
+  let s = seed;
+  return () => {
+    s = ((s * 1664525 + 1013904223) | 0) >>> 0;
+    return s / 0xFFFFFFFF;
+  };
+}
+
+function randn(rand) {
+  const u = Math.max(1e-10, rand()), v = rand();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+/* =================================================================
+   GENERADOR DE OHLCV SIMULADOS
+   ================================================================= */
+function generarOHLCV(ticker, dias) {
+  const cfg = ACTIVOS[ticker];
+  const seed = ticker.split('').reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 1);
+  const rand = makePRNG(seed);
+
+  const fechas = [], opens = [], closes = [], highs = [], lows = [], vols = [];
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  let precio = cfg.base;
+
+  for (let i = dias; i >= 0; i--) {
+    const d = new Date(hoy); d.setDate(hoy.getDate() - i);
+    // Omitir fines de semana para acciones
+    if (cfg.base < 10000 && (d.getDay() === 0 || d.getDay() === 6)) continue;
+
+    const retorno = cfg.trend + cfg.vol * randn(rand);
+    const openDay = precio * (1 + cfg.vol * 0.3 * randn(rand));
+    precio = precio * Math.exp(retorno);
+    const rango = cfg.vol * (0.5 + rand() * 1.5);
+    const high = Math.max(openDay, precio) * (1 + rango * 0.5);
+    const low  = Math.min(openDay, precio) * (1 - rango * 0.5);
+    const volBase = cfg.base > 1000 ? 3e9 : 5e7;
+    const volDay  = volBase * (0.7 + rand() * 0.9);
+
+    fechas.push(d.toISOString().split('T')[0]);
+    opens.push(+openDay.toFixed(2));
+    closes.push(+precio.toFixed(2));
+    highs.push(+high.toFixed(2));
+    lows.push(+low.toFixed(2));
+    vols.push(Math.round(volDay));
+  }
+  return { fechas, opens, closes, highs, lows, vols };
+}
+
+/* =================================================================
+   SIMULADOR SVC — Generación de señales BUY / HOLD / SELL
+   ---------------------------------------------------------------
+   Lógica simplificada que IMITA el comportamiento del SVC real:
+   - Usa características derivadas de la ventana de 60 días:
+     retorno acumulado, momentum, relación precio/SMA20.
+   - Aplica umbrales calibrados para una distribución realista
+     (aprox. 35% BUY, 25% SELL, 40% HOLD).
+   - Genera probabilidades simuladas con softmax para imitar
+     la salida de predict_proba() del SVC.
+   ================================================================= */
+function simularSVC(closes, rand) {
+  const N = closes.length;
+  const VENTANA = 60;
+  const senales = new Array(N).fill(null);    // null = sin señal (insuficiente historial)
+  const probas   = new Array(N).fill(null);
+
+  for (let i = VENTANA; i < N; i++) {
+    // --- Características (features) de la ventana ---
+    const ventana = closes.slice(i - VENTANA, i);
+    const precioActual = closes[i];
+
+    // Retorno acumulado de la ventana (60 días)
+    const retorno60 = (ventana[ventana.length - 1] - ventana[0]) / ventana[0];
+
+    // Momentum corto (últimos 5 días dentro de la ventana)
+    const momentum5 = (ventana[ventana.length - 1] - ventana[ventana.length - 6]) / ventana[ventana.length - 6];
+
+    // SMA 20 dentro de la ventana
+    const sma20 = ventana.slice(-20).reduce((a, b) => a + b, 0) / 20;
+    const relSMA = (precioActual - sma20) / sma20;   // > 0 → sobre la media
+
+    // Volatilidad de la ventana
+    const retornos = ventana.map((p, k) => k === 0 ? 0 : (p - ventana[k-1]) / ventana[k-1]);
+    const volVentana = Math.sqrt(retornos.reduce((a, r) => a + r*r, 0) / retornos.length);
+
+    // --- Puntuación heurística del SVC (kernel RBF simula una función no lineal) ---
+    // Puntaje "bullish": retorno positivo, momentum positivo y precio sobre SMA
+    const score = retorno60 * 0.5 + momentum5 * 1.2 + relSMA * 0.8;
+
+    // Umbral adaptado por volatilidad (mayor vol → más HOLD)
+    const umbral = 0.012 + volVentana * 0.4;
+
+    let clase;
+    if (score >  umbral) clase = 'BUY';
+    else if (score < -umbral) clase = 'SELL';
+    else clase = 'HOLD';
+
+    // Ruido estocástico para simular la incertidumbre del kernel
+    const ruido = (rand() - 0.5) * 0.4;
+    const scoreRuido = score + ruido;
+    // Re-evaluar con ruido
+    if      (scoreRuido >  umbral * 0.7) clase = 'BUY';
+    else if (scoreRuido < -umbral * 0.7) clase = 'SELL';
+    else                                  clase = 'HOLD';
+
+    // --- Probabilidades simuladas (softmax) ---
+    const logits = {
+      BUY:  scoreRuido * 3.0 + rand() * 0.5,
+      HOLD: -Math.abs(scoreRuido) * 1.5 + rand() * 0.3,
+      SELL: -scoreRuido * 3.0 + rand() * 0.5,
+    };
+    const exp = { BUY: Math.exp(logits.BUY), HOLD: Math.exp(logits.HOLD), SELL: Math.exp(logits.SELL) };
+    const sumExp = exp.BUY + exp.HOLD + exp.SELL;
+    probas[i] = {
+      BUY:  +(exp.BUY  / sumExp).toFixed(3),
+      HOLD: +(exp.HOLD / sumExp).toFixed(3),
+      SELL: +(exp.SELL / sumExp).toFixed(3),
+    };
+    senales[i] = clase;
+  }
+  return { senales, probas };
+}
+
+/* =================================================================
+   CALCULAR MÉTRICAS del modelo (Accuracy, F1, Precision, Recall)
+   ---------------------------------------------------------------
+   Compara predicciones del SVC vs. señal "real" (dirección del
+   retorno siguiente): si closes[i+1] > closes[i] * 1.005 → BUY,
+   si closes[i+1] < closes[i] * 0.995 → SELL, else → HOLD.
+   ================================================================= */
+function calcularMetricas(closes, senales) {
+  const clases = ['BUY', 'SELL', 'HOLD'];
+
+  // Etiqueta real (basada en el retorno siguiente)
+  const reales = closes.map((p, i) => {
+    if (i >= closes.length - 1) return null;
+    const ret = (closes[i + 1] - p) / p;
+    if (ret > 0.005) return 'BUY';
+    if (ret < -0.005) return 'SELL';
+    return 'HOLD';
+  });
+
+  // Pares válidos (predicción ≠ null y real ≠ null)
+  const pares = [];
+  for (let i = 0; i < senales.length - 1; i++) {
+    if (senales[i] !== null && reales[i] !== null) {
+      pares.push({ pred: senales[i], real: reales[i] });
+    }
+  }
+
+  // Matriz de confusión 3×3
+  const matriz = {};
+  clases.forEach(r => { matriz[r] = {}; clases.forEach(c => { matriz[r][c] = 0; }); });
+  pares.forEach(({ pred, real }) => { matriz[real][pred]++; });
+
+  // Total de predicciones correctas → Accuracy
+  const correctas = clases.reduce((s, c) => s + matriz[c][c], 0);
+  const accuracy  = correctas / pares.length;
+
+  // Precision, Recall y F1 por clase → macro-average
+  let precisionMacro = 0, recallMacro = 0, f1Macro = 0;
+  clases.forEach(c => {
+    const tp = matriz[c][c];
+    const fp = clases.reduce((s, r) => s + (r !== c ? matriz[r][c] : 0), 0);
+    const fn = clases.reduce((s, p) => s + (p !== c ? matriz[c][p] : 0), 0);
+    const prec = tp / (tp + fp + 1e-9);
+    const rec  = tp / (tp + fn + 1e-9);
+    const f1   = 2 * prec * rec / (prec + rec + 1e-9);
+    precisionMacro += prec; recallMacro += rec; f1Macro += f1;
+  });
+
+  return {
+    accuracy:  +(accuracy * 100).toFixed(1),
+    precision: +((precisionMacro / 3) * 100).toFixed(1),
+    recall:    +((recallMacro    / 3) * 100).toFixed(1),
+    f1:        +((f1Macro        / 3) * 100).toFixed(1),
+    matriz,
+    pares: pares.length,
+  };
+}
+
+/* =================================================================
+   RENDERIZADO DEL GRÁFICO DE PRECIOS (Plotly)
+   ================================================================= */
+function renderGrafico() {
+  mostrarLoader(true);
+  setTimeout(_render, 80);   // Pequeño retardo para que el spinner aparezca
+}
+
+function _render() {
+  const { ticker } = E;
+  const cfg  = ACTIVOS[ticker];
+
+  // Obtener (o generar) datos del cache
+  if (!E.cache[ticker]) {
+    const seed = ticker.split('').reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 1);
+    const rand = makePRNG(seed + 999);   // semilla distinta para el ruido del SVC
+    const ohlcv = generarOHLCV(ticker, 180);   // 6 meses de historia
+    const { senales, probas } = simularSVC(ohlcv.closes, rand);
+    const metricas = calcularMetricas(ohlcv.closes, senales);
+    E.cache[ticker] = { ohlcv, senales, probas, metricas };
+  }
+
+  const { ohlcv, senales, probas, metricas } = E.cache[ticker];
+  const { fechas, closes } = ohlcv;
+  const N = fechas.length;
+
+  // --- Separar fechas y precios por señal para los marcadores ---
+  const pts = { BUY:{ x:[], y:[] }, SELL:{ x:[], y:[] }, HOLD:{ x:[], y:[] } };
+  fechas.forEach((f, i) => {
+    if (senales[i]) pts[senales[i]].x.push(f), pts[senales[i]].y.push(closes[i]);
+  });
+
+  // --- Traza: línea de precios ---
+  const tLinea = {
+    type: 'scatter', mode: 'lines', name: ticker,
+    x: fechas, y: closes,
+    line: { color:'#1F3864', width:2 },
+    hovertemplate: '<b>%{x}</b><br>Precio: <b>$%{y:.2f}</b><extra></extra>',
+  };
+
+  // --- Traza: marcadores BUY (triángulo apuntando arriba ▲) ---
+  const tBUY = {
+    type: 'scatter', mode: 'markers', name: 'BUY',
+    x: pts.BUY.x, y: pts.BUY.y,
+    marker: {
+      symbol: 'triangle-up', size: 10,
+      color: '#26A69A',
+      line: { color:'#1a6b66', width: 1 },
+    },
+    hovertemplate: '<b>%{x}</b><br>Señal: <b style="color:#26A69A">BUY</b><br>Precio: $%{y:.2f}<extra></extra>',
+  };
+
+  // --- Traza: marcadores SELL (triángulo apuntando abajo ▼) ---
+  const tSELL = {
+    type: 'scatter', mode: 'markers', name: 'SELL',
+    x: pts.SELL.x, y: pts.SELL.y,
+    marker: {
+      symbol: 'triangle-down', size: 10,
+      color: '#EF5350',
+      line: { color:'#b71c1c', width: 1 },
+    },
+    hovertemplate: '<b>%{x}</b><br>Señal: <b style="color:#EF5350">SELL</b><br>Precio: $%{y:.2f}<extra></extra>',
+  };
+
+  // --- Traza: marcadores HOLD (círculo gris ●) ---
+  const tHOLD = {
+    type: 'scatter', mode: 'markers', name: 'HOLD',
+    x: pts.HOLD.x, y: pts.HOLD.y,
+    marker: {
+      symbol: 'circle', size: 6,
+      color: '#94A3B8',
+      line: { color:'#64748B', width: 1 },
+      opacity: 0.7,
+    },
+    hovertemplate: '<b>%{x}</b><br>Señal: <b>HOLD</b><br>Precio: $%{y:.2f}<extra></extra>',
+  };
+
+  // --- Layout ---
+  const layout = {
+    paper_bgcolor: '#FFFFFF', plot_bgcolor: '#FFFFFF',
+    font: { family:'Inter,sans-serif', size:11, color:'#0D1B33' },
+    margin: { l:62, r:18, t:10, b:42 },
+    xaxis: {
+      showgrid: false,
+      tickfont: { size:10, color:'#6B7A99' },
+      linecolor: '#E2E8F3', type: 'date',
+      rangeslider: { visible:true, thickness:0.05, bgcolor:'#F5F7FB' },
+    },
+    yaxis: {
+      showgrid: true, gridcolor:'#F0F3FA', gridwidth:1,
+      tickprefix: '$', tickfont: { size:10, color:'#6B7A99' },
+      linecolor: '#E2E8F3', zeroline: false, autorange: true,
+    },
+    legend: {
+      orientation: 'h', x:0, y:1.01,
+      bgcolor: 'transparent', font:{ size:11 },
+    },
+    hovermode: 'closest',
+    dragmode: 'zoom',
+    template: 'plotly_white',
+  };
+
+  const config = {
+    responsive: true, displaylogo: false, scrollZoom: true,
+    modeBarButtonsToRemove: ['lasso2d','select2d','autoScale2d'],
+    toImageButtonOptions: { format:'png', filename:'InvestAI_SVC_'+ticker },
+  };
+
+  // newPlot la primera vez, react (diff eficiente) las siguientes
+  const fn = E.graficado ? Plotly.react : Plotly.newPlot;
+  fn('plot-precio', [tLinea, tBUY, tSELL, tHOLD], layout, config).then(() => {
+    E.graficado = true;
+    mostrarLoader(false);
+    actualizarPanelDerecho(ticker, ohlcv, senales, probas, metricas);
+    renderMetricas(metricas);
+    renderConfusion(metricas.matriz);
+    renderHistorial(ticker, fechas, senales, probas);
+  });
+}
+
+/* =================================================================
+   PANEL DERECHO — semáforo y probabilidades
+   ================================================================= */
+function actualizarPanelDerecho(ticker, ohlcv, senales, probas, metricas) {
+  const { closes, fechas } = ohlcv;
+  const N = closes.length;
+
+  // Última señal válida
+  let ultimaSenal = null, ultimaProba = null;
+  for (let i = N - 1; i >= 0; i--) {
+    if (senales[i]) { ultimaSenal = senales[i]; ultimaProba = probas[i]; break; }
+  }
+
+  // Cabecera del gráfico
+  const precioActual = closes[N - 1];
+  const precioPrev   = closes[Math.max(0, N - 2)];
+  const varPct       = ((precioActual - precioPrev) / precioPrev) * 100;
+  const alcista      = varPct >= 0;
+
+  document.getElementById('hdr-ticker').textContent = ticker;
+  const hp = document.getElementById('hdr-precio');
+  hp.textContent = '$' + precioActual.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  hp.style.color = alcista ? 'var(--buy)' : 'var(--sell)';
+  const hv = document.getElementById('hdr-var');
+  hv.textContent = (alcista ? '+' : '') + varPct.toFixed(2) + '%';
+  hv.className = 'hdr-var ' + (alcista ? 'pos' : 'neg');
+
+  // Semáforo
+  const clsDot = { BUY:'buy', SELL:'sell', HOLD:'hold' };
+  ['buy','hold','sell'].forEach(k => {
+    document.getElementById('dot-' + k).className = 'sdot off';
+  });
+  if (ultimaSenal) {
+    document.getElementById('dot-' + ultimaSenal.toLowerCase()).className = 'sdot ' + clsDot[ultimaSenal];
+    const st = document.getElementById('senal-tit');
+    st.textContent = ultimaSenal;
+    st.className   = 'senal-tit ' + clsDot[ultimaSenal];
+
+    const descs = {
+      BUY:  'El SVC detecta momentum alcista. Ventana de 60 días con kernel RBF indica presión compradora.',
+      SELL: 'El SVC detecta presión vendedora. El clasificador asigna mayor probabilidad a corrección.',
+      HOLD: 'Señal ambigua. El SVC no identifica tendencia clara con los features actuales.',
+    };
+    document.getElementById('senal-desc').textContent = descs[ultimaSenal];
+  }
+
+  // Probabilidades
+  if (ultimaProba) {
+    document.getElementById('prob-buy').textContent  = (ultimaProba.BUY  * 100).toFixed(1) + '%';
+    document.getElementById('prob-hold').textContent = (ultimaProba.HOLD * 100).toFixed(1) + '%';
+    document.getElementById('prob-sell').textContent = (ultimaProba.SELL * 100).toFixed(1) + '%';
+  }
+}
+
+/* =================================================================
+   PANEL DE MÉTRICAS — Accuracy, F1, Precision, Recall
+   ================================================================= */
+function renderMetricas(m) {
+  const datos = [
+    { lbl:'Accuracy',  val:m.accuracy,  color:'#1F3864' },
+    { lbl:'F1-Score',  val:m.f1,        color:'#C5961A' },
+    { lbl:'Precision', val:m.precision, color:'#26A69A' },
+    { lbl:'Recall',    val:m.recall,    color:'#8B5CF6' },
+  ];
+
+  const grid = document.getElementById('metricas-grid');
+  grid.innerHTML = datos.map(d => `
+    <div class="met-item">
+      <div class="met-lbl">${d.lbl}</div>
+      <div class="met-val" style="color:${d.color}">${d.val}%</div>
+      <div class="met-bar">
+        <div class="met-fill" style="width:${d.val}%;background:${d.color}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* =================================================================
+   MATRIZ DE CONFUSIÓN 3×3 — con colores de calor
+   ================================================================= */
+function renderConfusion(matriz) {
+  const clases   = ['BUY', 'SELL', 'HOLD'];
+  const nombres  = { BUY:'BUY', SELL:'SELL', HOLD:'HOLD' };
+  const colores  = { BUY:'#26A69A', SELL:'#EF5350', HOLD:'#F59E0B' };
+
+  // Total de predicciones para normalizar
+  const total = clases.reduce((s, r) => s + clases.reduce((ss, c) => ss + matriz[r][c], 0), 0);
+
+  // Máximo valor (para escalar el color de calor)
+  let maxVal = 0;
+  clases.forEach(r => clases.forEach(c => { maxVal = Math.max(maxVal, matriz[r][c]); }));
+
+  // Función de color de calor: más alto → azul oscuro, bajo → gris claro
+  function heatColor(val, isDiag) {
+    const t = maxVal > 0 ? val / maxVal : 0;
+    if (isDiag) {
+      // Diagonal: escala verde (TP) — cuanto más alto más saturado
+      const g = Math.round(100 + t * 66);   // 100..166
+      const a = 0.15 + t * 0.60;
+      return `rgba(38,166,154,${a.toFixed(2)})`;
+    } else {
+      // Fuera de diagonal: escala roja (errores)
+      if (val === 0) return '#F5F7FB';
+      const a = 0.08 + t * 0.55;
+      return `rgba(239,83,80,${a.toFixed(2)})`;
+    }
+  }
+
+  // Construir HTML
+  const xlabels = `<div class="c-xlabels">
+    ${clases.map(c => `<div class="c-xlabel">${nombres[c]}</div>`).join('')}
+  </div>`;
+
+  const celdas = clases.map(r =>
+    clases.map(c => {
+      const val    = matriz[r][c];
+      const pct    = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
+      const isDiag = r === c;
+      const bg     = heatColor(val, isDiag);
+      const txtColor = val > maxVal * 0.6 ? '#fff' : '#0D1B33';
+      return `<div class="c-cell ${isDiag ? 'diag' : ''}"
+                   style="background:${bg}"
+                   title="${r==='BUY'?'Alcista':r==='SELL'?'Bajista':'Lateral'} real → predicho ${c}">
+        <span class="c-val" style="color:${txtColor}">${val}</span>
+        <span class="c-pct" style="color:${txtColor}">${pct}%</span>
+      </div>`;
+    }).join('')
+  ).join('');
+
+  const ylabels = clases.map(r =>
+    `<div class="c-ylabel" style="color:${colores[r]}">${nombres[r]}</div>`
+  ).join('');
+
+  document.getElementById('confusion-inner').innerHTML = `
+    <div class="confusion-wrap">
+      <div class="c-yaxis-lbl">Real →</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;">
+        <div style="height:22px"></div>
+        ${ylabels}
+      </div>
+      <div class="c-table-wrap">
+        ${xlabels}
+        <div class="c-grid">${celdas}</div>
+        <div class="c-xaxis-lbl">← Predicho</div>
+      </div>
+    </div>
+  `;
+}
+
+/* =================================================================
+   HISTORIAL DE SEÑALES RECIENTES — últimas 10
+   ================================================================= */
+function renderHistorial(ticker, fechas, senales, probas) {
+  const pares = [];
+  for (let i = fechas.length - 1; i >= 0 && pares.length < 10; i--) {
+    if (senales[i]) pares.push({ fecha: fechas[i], senal: senales[i], prob: probas[i] });
+  }
+
+  const badgeClass = { BUY:'buy', SELL:'sell', HOLD:'hold' };
+
+  document.getElementById('hist-body').innerHTML = pares.map(p => {
+    const probMax = Math.max(p.prob.BUY, p.prob.HOLD, p.prob.SELL) * 100;
+    return `
+    <div class="hist-row">
+      <span class="hist-fecha">${p.fecha}</span>
+      <span class="hist-ticker">${ticker}</span>
+      <span class="hist-badge ${badgeClass[p.senal]}">${p.senal}</span>
+      <span class="hist-prob">conf. ${probMax.toFixed(0)}%</span>
+    </div>`;
+  }).join('');
+}
+
+/* =================================================================
+   CAMBIO DE TICKER
+   ================================================================= */
+function cambiarTicker(ticker) {
+  E.ticker = ticker;
+  E.graficado = false;   // Forzar newPlot para resetear el gráfico
+  renderGrafico();
+}
+
+/* =================================================================
+   UTILIDADES
+   ================================================================= */
+function mostrarLoader(show) {
+  document.getElementById('chart-loader').classList.toggle('oculto', !show);
+}
+
+function tickReloj() {
+  document.getElementById('reloj').textContent =
+    new Date().toLocaleTimeString('es-PE', { hour12:false });
+}
+
+/* =================================================================
+   PUNTO DE ENTRADA — ejecutado cuando DOM + Plotly están listos
+   ================================================================= */
+function init() {
+  renderGrafico();
+  tickReloj();
+  setInterval(tickReloj, 1000);
+
+  // Ocultar overlay después de que el gráfico esté visible
+  setTimeout(() => {
+    const ov = document.getElementById('app-overlay');
+    ov.classList.add('oculto');
+    setTimeout(() => ov.remove(), 600);
+  }, 900);
+}
+
+// Garantizar que el DOM esté listo antes de llamar init()
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+
+</body>
+</html>

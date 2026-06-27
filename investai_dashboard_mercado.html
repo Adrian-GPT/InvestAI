@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InvestAI — Dashboard de Mercado</title>
+
+  <!-- Inter desde Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* =========================================================
+       VARIABLES GLOBALES
+       ========================================================= */
+    :root {
+      --azul:        #1F3864;
+      --dorado:      #C5961A;
+      --blanco:      #FFFFFF;
+      --fondo:       #F5F7FB;
+      --panel:       #FFFFFF;
+      --borde:       #E2E8F3;
+      --texto:       #0D1B33;
+      --suave:       #6B7A99;
+      --alcista:     #26A69A;
+      --alcista-bg:  #E6F7F6;
+      --bajista:     #EF5350;
+      --bajista-bg:  #FDECEA;
+      --sma20:       #F59E0B;
+      --sma50:       #8B5CF6;
+      --ema12:       #3B82F6;
+      --r:           10px;
+      --rl:          14px;
+      --sh-s:        0 1px 4px  rgba(31,56,100,.08);
+      --sh-m:        0 4px 18px rgba(31,56,100,.11);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    /* =========================================================
+       OVERLAY DE CARGA GLOBAL (mientras Plotly descarga)
+       ========================================================= */
+    #app-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--fondo);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+      transition: opacity .5s;
+    }
+
+    #app-overlay.oculto { opacity: 0; pointer-events: none; }
+
+    .ov-logo {
+      font-size: 22px; font-weight: 800; color: var(--azul);
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .ov-logo span { color: var(--dorado); }
+
+    .ov-barra {
+      width: 220px; height: 4px;
+      background: var(--borde); border-radius: 4px; overflow: hidden;
+    }
+
+    .ov-progreso {
+      height: 100%;
+      background: linear-gradient(90deg, var(--azul), var(--dorado));
+      border-radius: 4px;
+      animation: progreso 2.5s ease-in-out forwards;
+    }
+
+    @keyframes progreso { from { width: 0; } to { width: 100%; } }
+
+    .ov-texto {
+      font-size: 12px; color: var(--suave); letter-spacing: 0.4px;
+    }
+
+    /* =========================================================
+       LAYOUT
+       ========================================================= */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* NAVBAR */
+    .navbar {
+      background: var(--azul);
+      color: var(--blanco);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 22px; height: 52px; flex-shrink: 0;
+      box-shadow: 0 2px 14px rgba(0,0,0,.20);
+      position: sticky; top: 0; z-index: 200;
+    }
+
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 17px; letter-spacing: -.3px;
+    }
+
+    .nav-brand em { color: var(--dorado); font-style: normal; }
+
+    .nav-badge {
+      background: rgba(197,150,26,.2);
+      border: 1px solid rgba(197,150,26,.5);
+      color: var(--dorado);
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 20px; letter-spacing: .6px;
+    }
+
+    .nav-r { display: flex; align-items: center; gap: 18px; }
+
+    .live-ind {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12px; color: rgba(255,255,255,.72);
+    }
+
+    .live-ind::before {
+      content: ''; width: 8px; height: 8px; border-radius: 50%;
+      background: #4ADE80;
+      box-shadow: 0 0 0 2px rgba(74,222,128,.35);
+      animation: pulso 1.7s ease-in-out infinite;
+    }
+
+    @keyframes pulso {
+      0%,100% { box-shadow: 0 0 0 2px rgba(74,222,128,.35); }
+      50%      { box-shadow: 0 0 0 6px rgba(74,222,128,.0); }
+    }
+
+    .reloj { font-size: 12px; color: rgba(255,255,255,.55); font-variant-numeric: tabular-nums; }
+
+    /* CONTENIDO PRINCIPAL */
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 292px;
+      gap: 14px;
+      padding: 14px 18px 20px;
+      flex: 1; min-height: 0;
+    }
+
+    .col-g { display: flex; flex-direction: column; gap: 11px; min-width: 0; }
+    .col-p { display: flex; flex-direction: column; gap: 11px; }
+
+    /* =========================================================
+       PESTAÑAS
+       ========================================================= */
+    .tabs {
+      display: flex; gap: 0;
+      background: var(--panel); border: 1px solid var(--borde);
+      border-radius: var(--rl); padding: 4px;
+      align-self: flex-start; box-shadow: var(--sh-s);
+    }
+
+    .tab {
+      padding: 7px 20px; border-radius: calc(var(--rl) - 2px);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      border: none; background: transparent; color: var(--suave);
+      transition: background .2s, color .2s; font-family: inherit;
+      display: flex; align-items: center; gap: 7px;
+    }
+
+    .tab:hover { color: var(--azul); }
+
+    .tab.activa { background: var(--azul); color: var(--blanco); box-shadow: var(--sh-s); }
+
+    /* =========================================================
+       CONTROLES
+       ========================================================= */
+    .controles {
+      background: var(--panel); border: 1px solid var(--borde);
+      border-radius: var(--rl); padding: 11px 16px;
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      box-shadow: var(--sh-s);
+    }
+
+    .ctrl-g { display: flex; flex-direction: column; gap: 3px; }
+
+    .ctrl-lbl {
+      font-size: 10px; font-weight: 700; color: var(--suave);
+      letter-spacing: .5px; text-transform: uppercase;
+    }
+
+    .ctrl-sel {
+      border: 1.5px solid var(--borde); border-radius: 8px;
+      padding: 6px 28px 6px 10px;
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      color: var(--texto); background: var(--fondo);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231F3864' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 9px center;
+      appearance: none; cursor: pointer; outline: none;
+      transition: border-color .2s, box-shadow .2s; min-width: 138px;
+    }
+
+    .ctrl-sel:focus { border-color: var(--azul); box-shadow: 0 0 0 3px rgba(31,56,100,.10); }
+
+    .sep { width: 1px; height: 34px; background: var(--borde); flex-shrink: 0; }
+
+    .periodo-btns { display: flex; gap: 4px; }
+
+    .p-btn {
+      padding: 5px 10px; border: 1.5px solid var(--borde); border-radius: 7px;
+      font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+      background: var(--fondo); color: var(--suave); transition: all .15s;
+    }
+
+    .p-btn:hover { border-color: var(--azul); color: var(--azul); }
+    .p-btn.activo { background: var(--azul); border-color: var(--azul); color: var(--blanco); }
+
+    .ind-toggles { display: flex; gap: 7px; flex-wrap: wrap; margin-left: auto; }
+
+    .ind-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 9px; border-radius: 7px; border: 1.5px solid;
+      font-family: inherit; font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: opacity .2s;
+    }
+
+    .ind-btn .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .ind-btn[data-k="sma20"] { border-color: var(--sma20); color: var(--sma20); background: #FFFBEB; }
+    .ind-btn[data-k="sma50"] { border-color: var(--sma50); color: var(--sma50); background: #F5F3FF; }
+    .ind-btn[data-k="ema12"] { border-color: var(--ema12); color: var(--ema12); background: #EFF6FF; }
+    .ind-btn.off { opacity: .35; }
+
+    /* =========================================================
+       TARJETA GRÁFICO
+       ========================================================= */
+    .chart-card {
+      background: var(--panel); border: 1px solid var(--borde);
+      border-radius: var(--rl); overflow: hidden;
+      box-shadow: var(--sh-m); flex: 1;
+      min-height: 490px; position: relative;
+    }
+
+    /* Spinner interno de recarga de gráfico */
+    .chart-loader {
+      position: absolute; inset: 0; z-index: 10;
+      background: rgba(255,255,255,.82);
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--rl); transition: opacity .3s;
+    }
+
+    .chart-loader.oculto { opacity: 0; pointer-events: none; }
+
+    .ring {
+      width: 34px; height: 34px;
+      border: 3px solid var(--borde); border-top-color: var(--azul);
+      border-radius: 50%; animation: giro .7s linear infinite;
+    }
+
+    @keyframes giro { to { transform: rotate(360deg); } }
+
+    /* Cabecera del gráfico */
+    .chart-hdr {
+      padding: 13px 16px 10px; border-bottom: 1px solid var(--borde);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+
+    .hdr-ticker { font-size: 19px; font-weight: 800; color: var(--azul); letter-spacing: -.4px; }
+
+    .hdr-precio { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    .hdr-var {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 20px;
+      font-size: 12px; font-weight: 700;
+    }
+
+    .hdr-var.pos { background: var(--alcista-bg); color: var(--alcista); }
+    .hdr-var.neg { background: var(--bajista-bg); color: var(--bajista); }
+
+    .hdr-fecha { margin-left: auto; font-size: 11px; color: var(--suave); }
+
+    /* Contenedor del gráfico Plotly */
+    #plot { width: 100%; height: 450px; }
+
+    /* =========================================================
+       PANEL LATERAL
+       ========================================================= */
+    .pcard {
+      background: var(--panel); border: 1px solid var(--borde);
+      border-radius: var(--rl); overflow: hidden; box-shadow: var(--sh-s);
+    }
+
+    .pcard-tit {
+      background: var(--azul); color: var(--blanco);
+      font-size: 11px; font-weight: 700; letter-spacing: .6px;
+      text-transform: uppercase; padding: 9px 14px;
+    }
+
+    /* Grid 2 col */
+    .dat-grid { display: grid; grid-template-columns: 1fr 1fr; }
+
+    .dat-item {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--borde); border-right: 1px solid var(--borde);
+    }
+
+    .dat-item:nth-child(2n) { border-right: none; }
+
+    .dat-lbl { font-size: 9.5px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+
+    .dat-val { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    .dat-val.pos { color: var(--alcista); }
+    .dat-val.neg { color: var(--bajista); }
+
+    /* OHLCV */
+    .ohlcv { padding: 9px 14px; border-bottom: 1px solid var(--borde); }
+
+    .sec-lbl { font-size: 9.5px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 7px; }
+
+    .ohlcv-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 3px 0; border-bottom: 1px solid var(--fondo);
+      font-size: 12px;
+    }
+
+    .ohlcv-row:last-child { border-bottom: none; }
+
+    .ohlcv-k { color: var(--suave); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+
+    .odot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    .ohlcv-v { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* Indicadores panel */
+    .inds { padding: 9px 14px; }
+
+    .ind-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 0; border-bottom: 1px solid var(--fondo); font-size: 12px;
+    }
+
+    .ind-row:last-child { border-bottom: none; }
+
+    .ind-k { display: flex; align-items: center; gap: 7px; color: var(--suave); font-weight: 500; }
+
+    .iline { width: 16px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+    .ind-v { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* Señal */
+    .senal-body { padding: 14px 14px 16px; }
+
+    .semaforo { display: flex; justify-content: center; align-items: center; gap: 11px; margin-bottom: 14px; }
+
+    .sdot {
+      width: 46px; height: 46px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; transition: transform .3s, box-shadow .3s;
+    }
+
+    .sdot.off    { background: var(--borde); opacity: .38; }
+    .sdot.buy    { background: var(--alcista); box-shadow: 0 0 0 5px var(--alcista-bg), 0 0 18px rgba(38,166,154,.35); transform: scale(1.12); }
+    .sdot.sell   { background: var(--bajista); box-shadow: 0 0 0 5px var(--bajista-bg), 0 0 18px rgba(239,83,80,.35); transform: scale(1.12); }
+    .sdot.hold   { background: #F59E0B;        box-shadow: 0 0 0 5px #FFFBEB,           0 0 18px rgba(245,158,11,.35); transform: scale(1.12); }
+
+    .senal-tit { text-align: center; font-size: 15px; font-weight: 700; letter-spacing: .3px; }
+    .senal-tit.buy  { color: var(--alcista); }
+    .senal-tit.sell { color: var(--bajista); }
+    .senal-tit.hold { color: #D97706; }
+
+    .senal-desc { font-size: 11px; color: var(--suave); text-align: center; margin-top: 5px; line-height: 1.45; }
+
+    /* Movers */
+    .mover-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 14px; border-bottom: 1px solid var(--borde);
+      cursor: pointer; transition: background .14s;
+    }
+
+    .mover-row:last-child { border-bottom: none; }
+    .mover-row:hover { background: var(--fondo); }
+
+    .mv-t { font-size: 12.5px; font-weight: 700; color: var(--azul); }
+    .mv-n { font-size: 10px; color: var(--suave); margin-top: 1px; }
+    .mv-p { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+    .mv-v { font-size: 11px; font-weight: 700; text-align: right; }
+
+    /* =========================================================
+       TEXTO AUXILIAR
+       ========================================================= */
+    .txt-pos { color: var(--alcista); }
+    .txt-neg { color: var(--bajista); }
+
+    /* =========================================================
+       RESPONSIVO
+       ========================================================= */
+    @media (max-width: 860px) {
+      .main { grid-template-columns: 1fr; }
+      .col-p { display: grid; grid-template-columns: 1fr 1fr; }
+      #plot  { height: 380px; }
+    }
+
+    @media (max-width: 540px) {
+      .col-p { grid-template-columns: 1fr; }
+      #plot  { height: 320px; }
+      .ind-toggles { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     OVERLAY DE CARGA — visible mientras Plotly descarga
+     ============================================================ -->
+<div id="app-overlay">
+  <div class="ov-logo">
+    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+      <rect width="40" height="40" rx="9" fill="#C5961A"/>
+      <rect x="9"  y="10" width="4" height="20" rx="2" fill="white" opacity=".3"/>
+      <rect x="9"  y="15" width="4" height="10" rx="1.5" fill="white"/>
+      <rect x="18" y="6"  width="4" height="28" rx="2" fill="white" opacity=".3"/>
+      <rect x="18" y="11" width="4" height="14" rx="1.5" fill="#1F3864"/>
+      <rect x="27" y="12" width="4" height="18" rx="2" fill="white" opacity=".3"/>
+      <rect x="27" y="17" width="4" height="8"  rx="1.5" fill="white"/>
+    </svg>
+    Invest<em>AI</em>
+  </div>
+  <div class="ov-barra"><div class="ov-progreso"></div></div>
+  <div class="ov-texto">Cargando motor de gráficos…</div>
+</div>
+
+<!-- ============================================================
+     APP
+     ============================================================ -->
+<div class="app">
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <svg width="24" height="24" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <rect width="40" height="40" rx="9" fill="#C5961A"/>
+        <rect x="9"  y="10" width="4" height="20" rx="2" fill="white" opacity=".3"/>
+        <rect x="9"  y="15" width="4" height="10" rx="1.5" fill="white"/>
+        <rect x="18" y="6"  width="4" height="28" rx="2" fill="white" opacity=".3"/>
+        <rect x="18" y="11" width="4" height="14" rx="1.5" fill="#1F3864"/>
+        <rect x="27" y="12" width="4" height="18" rx="2" fill="white" opacity=".3"/>
+        <rect x="27" y="17" width="4" height="8"  rx="1.5" fill="white"/>
+      </svg>
+      Invest<em>AI</em>
+      <span class="nav-badge">MERCADO</span>
+    </div>
+    <div class="nav-r">
+      <div class="live-ind">Datos en vivo</div>
+      <div class="reloj" id="reloj">--:--:--</div>
+    </div>
+  </nav>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div class="main">
+
+    <!-- ── Columna izquierda: gráfico ── -->
+    <div class="col-g">
+
+      <!-- Pestañas -->
+      <div class="tabs" role="tablist">
+        <button class="tab activa" id="tab-acciones" onclick="UI.pestana('acciones')" role="tab" aria-selected="true">
+          📈 Acciones
+        </button>
+        <button class="tab" id="tab-cripto" onclick="UI.pestana('cripto')" role="tab" aria-selected="false">
+          ₿ Criptomonedas
+        </button>
+      </div>
+
+      <!-- Controles -->
+      <div class="controles">
+
+        <div class="ctrl-g">
+          <span class="ctrl-lbl">Ticker</span>
+          <select class="ctrl-sel" id="sel-ticker" onchange="UI.ticker(this.value)" aria-label="Seleccionar ticker">
+            <optgroup label="Acciones" id="og-acciones">
+              <option value="AAPL">AAPL — Apple</option>
+              <option value="MSFT">MSFT — Microsoft</option>
+              <option value="GOOGL">GOOGL — Alphabet</option>
+              <option value="TSLA">TSLA — Tesla</option>
+              <option value="NVDA">NVDA — NVIDIA</option>
+            </optgroup>
+            <optgroup label="Criptomonedas" id="og-cripto">
+              <option value="BTC-USD">BTC-USD — Bitcoin</option>
+              <option value="ETH-USD">ETH-USD — Ethereum</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="ctrl-g">
+          <span class="ctrl-lbl">Período</span>
+          <div class="periodo-btns" role="group">
+            <button class="p-btn"        onclick="UI.periodo(30,   this)">1M</button>
+            <button class="p-btn activo" onclick="UI.periodo(90,   this)">3M</button>
+            <button class="p-btn"        onclick="UI.periodo(180,  this)">6M</button>
+            <button class="p-btn"        onclick="UI.periodo(365,  this)">1A</button>
+            <button class="p-btn"        onclick="UI.periodo(730,  this)">2A</button>
+            <button class="p-btn"        onclick="UI.periodo(1825, this)">5A</button>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="ctrl-g">
+          <span class="ctrl-lbl">Indicadores</span>
+          <div class="ind-toggles">
+            <button class="ind-btn" data-k="sma20" onclick="UI.indicador('sma20',this)" aria-pressed="true">
+              <div class="dot" style="background:var(--sma20)"></div> SMA 20
+            </button>
+            <button class="ind-btn" data-k="sma50" onclick="UI.indicador('sma50',this)" aria-pressed="true">
+              <div class="dot" style="background:var(--sma50)"></div> SMA 50
+            </button>
+            <button class="ind-btn" data-k="ema12" onclick="UI.indicador('ema12',this)" aria-pressed="true">
+              <div class="dot" style="background:var(--ema12)"></div> EMA 12
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /controles -->
+
+      <!-- Tarjeta gráfico -->
+      <div class="chart-card">
+        <div class="chart-loader" id="chart-loader">
+          <div class="ring"></div>
+        </div>
+        <div class="chart-hdr">
+          <span class="hdr-ticker" id="hdr-ticker">AAPL</span>
+          <span class="hdr-precio txt-pos" id="hdr-precio">$—</span>
+          <span class="hdr-var pos"       id="hdr-var">+0.00%</span>
+          <span class="hdr-fecha"         id="hdr-fecha">—</span>
+        </div>
+        <div id="plot"></div>
+      </div>
+
+    </div><!-- /col-g -->
+
+
+    <!-- ── Columna derecha: panel ── -->
+    <div class="col-p">
+
+      <!-- Datos de mercado -->
+      <div class="pcard">
+        <div class="pcard-tit">📊 Datos de Mercado</div>
+        <div class="dat-grid">
+          <div class="dat-item"><div class="dat-lbl">Apertura</div><div class="dat-val" id="d-open">—</div></div>
+          <div class="dat-item"><div class="dat-lbl">Cierre ant.</div><div class="dat-val" id="d-prev">—</div></div>
+          <div class="dat-item"><div class="dat-lbl">Máximo</div><div class="dat-val pos" id="d-high">—</div></div>
+          <div class="dat-item"><div class="dat-lbl">Mínimo</div><div class="dat-val neg" id="d-low">—</div></div>
+          <div class="dat-item"><div class="dat-lbl">Volumen</div><div class="dat-val" id="d-vol">—</div></div>
+          <div class="dat-item"><div class="dat-lbl" id="lbl-cap">Market Cap</div><div class="dat-val" id="d-cap">—</div></div>
+        </div>
+
+        <!-- OHLCV última vela -->
+        <div class="ohlcv">
+          <div class="sec-lbl">OHLCV — Última vela</div>
+          <div class="ohlcv-row"><span class="ohlcv-k"><span class="odot" style="background:#64748B"></span>Open</span><span class="ohlcv-v" id="ov-o">—</span></div>
+          <div class="ohlcv-row"><span class="ohlcv-k"><span class="odot" style="background:var(--alcista)"></span>High</span><span class="ohlcv-v" id="ov-h">—</span></div>
+          <div class="ohlcv-row"><span class="ohlcv-k"><span class="odot" style="background:var(--bajista)"></span>Low</span><span class="ohlcv-v" id="ov-l">—</span></div>
+          <div class="ohlcv-row"><span class="ohlcv-k"><span class="odot" style="background:var(--azul)"></span>Close</span><span class="ohlcv-v" id="ov-c">—</span></div>
+          <div class="ohlcv-row"><span class="ohlcv-k"><span class="odot" style="background:#94A3B8"></span>Adj Close</span><span class="ohlcv-v" id="ov-ac">—</span></div>
+          <div class="ohlcv-row"><span class="ohlcv-k"><span class="odot" style="background:#CBD5E1"></span>Volume</span><span class="ohlcv-v" id="ov-v">—</span></div>
+        </div>
+
+        <!-- Valores actuales de indicadores -->
+        <div class="inds">
+          <div class="sec-lbl">Indicadores Técnicos</div>
+          <div class="ind-row">
+            <span class="ind-k"><span class="iline" style="background:var(--sma20)"></span>SMA 20</span>
+            <span class="ind-v" id="iv-sma20">—</span>
+          </div>
+          <div class="ind-row">
+            <span class="ind-k"><span class="iline" style="background:var(--sma50)"></span>SMA 50</span>
+            <span class="ind-v" id="iv-sma50">—</span>
+          </div>
+          <div class="ind-row">
+            <span class="ind-k"><span class="iline" style="background:var(--ema12)"></span>EMA 12</span>
+            <span class="ind-v" id="iv-ema12">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Señal InvestAI -->
+      <div class="pcard">
+        <div class="pcard-tit">🤖 Señal InvestAI</div>
+        <div class="senal-body">
+          <div class="semaforo">
+            <div class="sdot off" id="dot-buy">🟢</div>
+            <div class="sdot off" id="dot-hold">🟡</div>
+            <div class="sdot off" id="dot-sell">🔴</div>
+          </div>
+          <div class="senal-tit buy" id="senal-tit">—</div>
+          <div class="senal-desc"    id="senal-desc">Calculando señal…</div>
+        </div>
+      </div>
+
+      <!-- Top movers -->
+      <div class="pcard">
+        <div class="pcard-tit">🔥 Mercado Rápido</div>
+        <div id="movers"></div>
+      </div>
+
+    </div><!-- /col-p -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+
+<!-- ============================================================
+     PLOTLY — cargado al final del body para garantizar que el
+     DOM esté listo ANTES de que el script lo use.
+     ============================================================ -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<!-- ============================================================
+     LÓGICA DE LA APLICACIÓN
+     IMPORTANTE: este bloque se ejecuta DESPUÉS de Plotly porque
+     está debajo de su <script>. No necesitamos DOMContentLoaded
+     para Plotly, pero sí para el DOM — ambos garantizados aquí.
+     ============================================================ -->
+<script>
+/* =================================================================
+   DATOS BASE DE CADA ACTIVO
+   base   : precio aproximado de referencia en USD
+   vol    : volatilidad diaria (desviación estándar del retorno)
+   trend  : sesgo de retorno diario (drift)
+   cap    : market cap estimado (solo display)
+   tipo   : 'accion' | 'cripto'
+   ================================================================= */
+const ACTIVOS = {
+  'AAPL':    { nombre:'Apple Inc.',      tipo:'accion', base:171,   vol:0.015, trend:0.0003, cap:'2.68T' },
+  'MSFT':    { nombre:'Microsoft Corp.', tipo:'accion', base:378,   vol:0.013, trend:0.0004, cap:'2.81T' },
+  'GOOGL':   { nombre:'Alphabet Inc.',   tipo:'accion', base:152,   vol:0.016, trend:0.0002, cap:'1.93T' },
+  'TSLA':    { nombre:'Tesla Inc.',      tipo:'accion', base:245,   vol:0.030, trend:0.0001, cap:'784B'  },
+  'NVDA':    { nombre:'NVIDIA Corp.',    tipo:'accion', base:875,   vol:0.025, trend:0.0006, cap:'2.15T' },
+  'BTC-USD': { nombre:'Bitcoin',         tipo:'cripto', base:67000, vol:0.035, trend:0.0002, cap:'1.31T' },
+  'ETH-USD': { nombre:'Ethereum',        tipo:'cripto', base:3500,  vol:0.040, trend:0.0001, cap:'421B'  },
+};
+
+/* Estado global */
+const E = {
+  ticker:    'AAPL',
+  dias:      90,
+  pestana:   'acciones',
+  inds:      { sma20:true, sma50:true, ema12:true },
+  cache:     {},          // OHLCV por clave "TICKER_dias"
+  graficado: false,       // true tras el primer Plotly.newPlot
+};
+
+/* =================================================================
+   GENERADOR DE OHLCV SIMULADOS
+   Usa un PRNG determinista (LCG) sembrado por ticker para que los
+   datos sean reproducibles y no cambien al re-renderizar.
+   ================================================================= */
+function generarOHLCV(ticker, dias) {
+  const cfg = ACTIVOS[ticker];
+  // Semilla determinista basada en el ticker
+  let rng = ticker.split('').reduce((a,c) => (a * 31 + c.charCodeAt(0)) | 0, 1);
+  const rand = () => { rng = ((rng * 1664525 + 1013904223) | 0) >>> 0; return rng / 0xFFFFFFFF; };
+  // Box-Muller → distribución normal estándar
+  const randn = () => {
+    const u = Math.max(1e-10, rand()), v = rand();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  };
+
+  const fechas=[], opens=[], highs=[], lows=[], closes=[], adjC=[], vols=[];
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  let precio = cfg.base;
+
+  for (let i = dias; i >= 0; i--) {
+    const d = new Date(hoy); d.setDate(hoy.getDate() - i);
+    // Omitir sábado (6) y domingo (0) para acciones
+    if (cfg.tipo === 'accion' && (d.getDay() === 0 || d.getDay() === 6)) continue;
+
+    const retorno  = cfg.trend + cfg.vol * randn();
+    const openDay  = precio * (1 + cfg.vol * 0.3 * randn());
+    precio         = precio * Math.exp(retorno);
+
+    const rango    = cfg.vol * (0.5 + rand() * 1.5);
+    const high     = Math.max(openDay, precio) * (1 + rango * 0.5);
+    const low      = Math.min(openDay, precio) * (1 - rango * 0.5);
+    const adjClose = precio * 0.9992;
+    const volBase  = cfg.tipo === 'cripto' ? 3e9 : 5e7;
+    const volDay   = volBase * (0.7 + rand() * 0.9) * (1 + Math.abs(retorno) * 10);
+
+    fechas.push(d.toISOString().split('T')[0]);
+    opens.push(+openDay.toFixed(2));
+    highs.push(+high.toFixed(2));
+    lows.push(+low.toFixed(2));
+    closes.push(+precio.toFixed(2));
+    adjC.push(+adjClose.toFixed(2));
+    vols.push(Math.round(volDay));
+  }
+
+  return { fechas, opens, highs, lows, closes, adjC, vols };
+}
+
+/* =================================================================
+   INDICADORES TÉCNICOS
+   ================================================================= */
+
+/** SMA de n períodos */
+function sma(arr, n) {
+  return arr.map((_, i) => {
+    if (i < n - 1) return null;
+    return +(arr.slice(i - n + 1, i + 1).reduce((a,b) => a+b, 0) / n).toFixed(2);
+  });
+}
+
+/** EMA de n períodos */
+function ema(arr, n) {
+  const k = 2 / (n + 1);
+  const out = new Array(arr.length).fill(null);
+  out[n - 1] = +(arr.slice(0, n).reduce((a,b)=>a+b,0) / n).toFixed(2);
+  for (let i = n; i < arr.length; i++) {
+    out[i] = +(arr[i] * k + out[i-1] * (1-k)).toFixed(2);
+  }
+  return out;
+}
+
+/* =================================================================
+   CACHÉ Y RECUPERACIÓN DE DATOS
+   ================================================================= */
+
+/** Convierte días calendario a velas (acciones: 5/7 de los días) */
+function diasAVelas(dias, tipo) {
+  return tipo === 'cripto' ? dias : Math.round(dias * 5 / 7);
+}
+
+function getDatos(ticker, dias) {
+  const key = ticker + '_' + dias;
+  if (E.cache[key]) return E.cache[key];
+
+  // Generar datos máximos una vez (5 años) y recortar
+  const maxKey = ticker + '_max';
+  if (!E.cache[maxKey]) E.cache[maxKey] = generarOHLCV(ticker, 1825);
+
+  const base  = E.cache[maxKey];
+  const n     = base.fechas.length;
+  const velas = Math.min(diasAVelas(dias, ACTIVOS[ticker].tipo), n);
+  const ini   = n - velas;
+
+  E.cache[key] = {
+    fechas: base.fechas.slice(ini),
+    opens:  base.opens.slice(ini),
+    highs:  base.highs.slice(ini),
+    lows:   base.lows.slice(ini),
+    closes: base.closes.slice(ini),
+    adjC:   base.adjC.slice(ini),
+    vols:   base.vols.slice(ini),
+  };
+  return E.cache[key];
+}
+
+/* =================================================================
+   FORMATEADORES
+   ================================================================= */
+const $f = (n, d=2) => n == null ? '—' : '$' + n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const vf = n => {
+  if (n >= 1e12) return (n/1e12).toFixed(2)+'T';
+  if (n >= 1e9)  return (n/1e9).toFixed(2)+'B';
+  if (n >= 1e6)  return (n/1e6).toFixed(2)+'M';
+  return n.toLocaleString('en-US');
+};
+
+/* =================================================================
+   RENDERIZADO DEL GRÁFICO
+   ================================================================= */
+function renderGrafico() {
+  mostrarLoader(true);
+  // Pequeño timeout para que el spinner aparezca antes del trabajo síncrono
+  setTimeout(_render, 60);
+}
+
+function _render() {
+  const { ticker, dias, inds } = E;
+  const d = getDatos(ticker, dias);
+  const { fechas, opens, highs, lows, closes, vols } = d;
+
+  /* ── Indicadores ── */
+  const s20 = sma(closes, 20);
+  const s50 = sma(closes, 50);
+  const e12 = ema(closes, 12);
+
+  /* ── Colores de volumen ── */
+  const volColors = closes.map((c,i) =>
+    c >= opens[i] ? 'rgba(38,166,154,.55)' : 'rgba(239,83,80,.55)'
+  );
+
+  /* ── Trazas ── */
+  const tVelas = {
+    type: 'candlestick', name: ticker,
+    x: fechas, open: opens, high: highs, low: lows, close: closes,
+    increasing: { line:{ color:'#26A69A', width:1.2 }, fillcolor:'#26A69A' },
+    decreasing: { line:{ color:'#EF5350', width:1.2 }, fillcolor:'#EF5350' },
+    yaxis:'y', xaxis:'x',
+    hoverlabel:{ bgcolor:'#1F3864', bordercolor:'#C5961A', font:{ family:'Inter,sans-serif', size:12, color:'white' } },
+  };
+
+  const tSMA20 = {
+    type:'scatter', mode:'lines', name:'SMA 20',
+    x: fechas, y: s20,
+    line:{ color:'#F59E0B', width:1.6 },
+    yaxis:'y', xaxis:'x',
+    visible: inds.sma20 ? true : 'legendonly',
+    hovertemplate:'SMA20: <b>$%{y:.2f}</b><extra></extra>',
+  };
+
+  const tSMA50 = {
+    type:'scatter', mode:'lines', name:'SMA 50',
+    x: fechas, y: s50,
+    line:{ color:'#8B5CF6', width:1.6, dash:'dot' },
+    yaxis:'y', xaxis:'x',
+    visible: inds.sma50 ? true : 'legendonly',
+    hovertemplate:'SMA50: <b>$%{y:.2f}</b><extra></extra>',
+  };
+
+  const tEMA12 = {
+    type:'scatter', mode:'lines', name:'EMA 12',
+    x: fechas, y: e12,
+    line:{ color:'#3B82F6', width:1.6, dash:'dashdot' },
+    yaxis:'y', xaxis:'x',
+    visible: inds.ema12 ? true : 'legendonly',
+    hovertemplate:'EMA12: <b>$%{y:.2f}</b><extra></extra>',
+  };
+
+  const tVol = {
+    type:'bar', name:'Volumen',
+    x: fechas, y: vols,
+    marker:{ color: volColors },
+    yaxis:'y2', xaxis:'x',
+    showlegend: false,
+    hovertemplate:'Vol: <b>%{y:,.0f}</b><extra></extra>',
+  };
+
+  /* ── Layout ── */
+  const layout = {
+    paper_bgcolor: '#FFFFFF', plot_bgcolor: '#FFFFFF',
+    font:{ family:'Inter,sans-serif', size:11, color:'#0D1B33' },
+    margin:{ l:62, r:18, t:8, b:42 },
+
+    xaxis:{
+      rangeslider:{ visible:true, thickness:0.055, bgcolor:'#F5F7FB' },
+      showgrid:false,
+      tickfont:{ size:10, color:'#6B7A99' },
+      linecolor:'#E2E8F3', type:'date',
+    },
+
+    yaxis:{
+      domain:[0.28,1],
+      showgrid:true, gridcolor:'#F0F3FA', gridwidth:1,
+      tickprefix:'$', tickfont:{ size:10, color:'#6B7A99' },
+      linecolor:'#E2E8F3', zeroline:false, autorange:true,
+    },
+
+    yaxis2:{
+      domain:[0,0.23],
+      showgrid:false, tickfont:{ size:9, color:'#6B7A99' },
+      linecolor:'#E2E8F3', zeroline:false, fixedrange:true,
+      tickformat:'.2s',
+    },
+
+    legend:{
+      orientation:'h', x:0, y:1.01,
+      bgcolor:'transparent', font:{ size:11 },
+    },
+
+    dragmode:'zoom', hovermode:'x unified',
+
+    shapes:[{
+      type:'line', x0:0, x1:1, xref:'paper',
+      y0:0.258, y1:0.258, yref:'paper',
+      line:{ color:'#E2E8F3', width:1.5 },
+    }],
+
+    annotations:[{
+      text:'VOLUMEN', xref:'paper', yref:'paper',
+      x:0.01, y:0.23, xanchor:'left', yanchor:'top',
+      showarrow:false, font:{ size:9, color:'#94A3B8', family:'Inter,sans-serif' },
+    }],
+  };
+
+  const config = {
+    responsive:true, displaylogo:false, scrollZoom:true,
+    modeBarButtonsToRemove:['lasso2d','select2d','autoScale2d'],
+    toImageButtonOptions:{ format:'png', filename:'InvestAI_'+ticker+'_'+fechas[fechas.length-1] },
+  };
+
+  const trazas = [tVelas, tSMA20, tSMA50, tEMA12, tVol];
+
+  // newPlot la primera vez; react (actualización eficiente) las siguientes
+  const fn = E.graficado ? Plotly.react : Plotly.newPlot;
+  fn('plot', trazas, layout, config).then(() => {
+    E.graficado = true;
+    mostrarLoader(false);
+    actualizarPanel(ticker, d, s20, s50, e12);
+  });
+}
+
+/* =================================================================
+   ACTUALIZAR PANEL LATERAL
+   ================================================================= */
+function actualizarPanel(ticker, d, s20, s50, e12) {
+  const cfg = ACTIVOS[ticker];
+  const n   = d.closes.length - 1;
+
+  const precioActual = d.closes[n];
+  const precioPrev   = d.closes[Math.max(0, n-1)];
+  const varAbs       = precioActual - precioPrev;
+  const varPct       = (varAbs / precioPrev) * 100;
+  const alcista      = varAbs >= 0;
+
+  /* Cabecera del gráfico */
+  t('hdr-ticker', ticker);
+  const hp = document.getElementById('hdr-precio');
+  hp.textContent = $f(precioActual);
+  hp.className   = 'hdr-precio ' + (alcista ? 'txt-pos' : 'txt-neg');
+
+  const hv = document.getElementById('hdr-var');
+  hv.textContent = (alcista?'+':'') + varPct.toFixed(2) + '%';
+  hv.className   = 'hdr-var ' + (alcista ? 'pos' : 'neg');
+  t('hdr-fecha', 'Cierre: ' + d.fechas[n]);
+
+  /* Grid de datos */
+  t('d-open', $f(d.opens[n]));
+  t('d-prev', $f(precioPrev));
+  t('d-high', $f(d.highs[n]));
+  t('d-low',  $f(d.lows[n]));
+  t('d-vol',  vf(d.vols[n]));
+  t('lbl-cap', cfg.tipo === 'cripto' ? 'Market Cap' : 'Mkt Cap (est.)');
+  t('d-cap',  cfg.cap);
+
+  /* OHLCV */
+  t('ov-o',  $f(d.opens[n]));
+  t('ov-h',  $f(d.highs[n]));
+  t('ov-l',  $f(d.lows[n]));
+  t('ov-c',  $f(d.closes[n]));
+  t('ov-ac', $f(d.adjC[n]));
+  t('ov-v',  d.vols[n].toLocaleString('en-US'));
+
+  /* Indicadores técnicos */
+  t('iv-sma20', s20[n] ? $f(s20[n]) : '—');
+  t('iv-sma50', s50[n] ? $f(s50[n]) : '—');
+  t('iv-ema12', e12[n] ? $f(e12[n]) : '—');
+
+  /* Señal heurística basada en cruce de medias */
+  let senal, desc;
+  if (e12[n] && s20[n] && s50[n]) {
+    if (e12[n] > s20[n] && s20[n] > s50[n] && d.closes[n] > e12[n]) {
+      senal='BUY';  desc='EMA12 > SMA20 > SMA50 y precio sobre EMA. Tendencia alcista confirmada por el ensamblado de modelos.';
+    } else if (e12[n] < s20[n] && s20[n] < s50[n] && d.closes[n] < e12[n]) {
+      senal='SELL'; desc='EMA12 < SMA20 < SMA50 y precio bajo EMA. Presión vendedora detectada por los modelos de clasificación.';
+    } else {
+      senal='HOLD'; desc='Indicadores mixtos. El ensamblado de 16 modelos no detecta tendencia clara. Se recomienda esperar.';
+    }
+  } else {
+    senal='HOLD'; desc='Insuficiente historial para calcular todos los indicadores en este período.';
+  }
+
+  const clsDot = { BUY:'buy', SELL:'sell', HOLD:'hold' };
+  document.getElementById('dot-buy').className  = 'sdot ' + (senal==='BUY'  ? 'buy'  : 'off');
+  document.getElementById('dot-hold').className = 'sdot ' + (senal==='HOLD' ? 'hold' : 'off');
+  document.getElementById('dot-sell').className = 'sdot ' + (senal==='SELL' ? 'sell' : 'off');
+
+  const st = document.getElementById('senal-tit');
+  st.textContent = senal;
+  st.className   = 'senal-tit ' + clsDot[senal];
+  t('senal-desc', desc);
+}
+
+/* =================================================================
+   TOP MOVERS (mini-lista)
+   ================================================================= */
+function renderMovers() {
+  const tickers = ['NVDA','TSLA','BTC-USD','MSFT','GOOGL'];
+  const contenedor = document.getElementById('movers');
+  contenedor.innerHTML = '';
+
+  tickers.forEach(tk => {
+    const d    = getDatos(tk, 5);
+    const n    = d.closes.length - 1;
+    const prec = d.closes[n];
+    const prev = d.closes[Math.max(0,n-1)];
+    const pct  = ((prec - prev) / prev) * 100;
+    const pos  = pct >= 0;
+    const color = pos ? '#26A69A' : '#EF5350';
+
+    const row = document.createElement('div');
+    row.className = 'mover-row';
+    row.onclick   = () => UI.ticker(tk);
+    row.innerHTML = `
+      <div>
+        <div class="mv-t">${tk}</div>
+        <div class="mv-n">${ACTIVOS[tk].nombre}</div>
+      </div>
+      <div>
+        <div class="mv-p">${$f(prec)}</div>
+        <div class="mv-v" style="color:${color}">${pos?'+':''}${pct.toFixed(2)}%</div>
+      </div>
+    `;
+    contenedor.appendChild(row);
+  });
+}
+
+/* =================================================================
+   HELPERS UI
+   ================================================================= */
+
+/** setText rápido */
+function t(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function mostrarLoader(show) {
+  const el = document.getElementById('chart-loader');
+  el.classList.toggle('oculto', !show);
+}
+
+/* =================================================================
+   OBJETO UI — manejadores de eventos de los controles
+   ================================================================= */
+const UI = {
+
+  pestana(nombre) {
+    E.pestana = nombre;
+    document.getElementById('tab-acciones').className = 'tab' + (nombre==='acciones'?' activa':'');
+    document.getElementById('tab-cripto').className   = 'tab' + (nombre==='cripto'  ?' activa':'');
+
+    // Seleccionar el primer ticker de la categoría
+    const primero = nombre === 'acciones' ? 'AAPL' : 'BTC-USD';
+    document.getElementById('sel-ticker').value = primero;
+    E.ticker = primero;
+    renderGrafico();
+  },
+
+  ticker(tk) {
+    E.ticker = tk;
+    document.getElementById('sel-ticker').value = tk;
+    // Sincronizar pestaña si cambió de categoría
+    const tipo = ACTIVOS[tk].tipo;
+    const pestanaCorrecta = tipo === 'cripto' ? 'cripto' : 'acciones';
+    if (E.pestana !== pestanaCorrecta) {
+      E.pestana = pestanaCorrecta;
+      document.getElementById('tab-acciones').className = 'tab' + (pestanaCorrecta==='acciones'?' activa':'');
+      document.getElementById('tab-cripto').className   = 'tab' + (pestanaCorrecta==='cripto'  ?' activa':'');
+    }
+    renderGrafico();
+  },
+
+  periodo(dias, btn) {
+    E.dias = dias;
+    document.querySelectorAll('.p-btn').forEach(b => b.classList.remove('activo'));
+    btn.classList.add('activo');
+    renderGrafico();
+  },
+
+  indicador(k, btn) {
+    E.inds[k] = !E.inds[k];
+    btn.classList.toggle('off', !E.inds[k]);
+    btn.setAttribute('aria-pressed', String(E.inds[k]));
+
+    // Actualizar visibilidad de la traza sin re-renderizar todo el gráfico
+    const idx = { sma20:1, sma50:2, ema12:3 };
+    if (E.graficado) {
+      Plotly.restyle('plot', { visible: E.inds[k] ? true : 'legendonly' }, [idx[k]]);
+    }
+  },
+};
+
+/* =================================================================
+   RELOJ
+   ================================================================= */
+function tickReloj() {
+  document.getElementById('reloj').textContent =
+    new Date().toLocaleTimeString('es-PE', { hour12:false });
+}
+
+/* =================================================================
+   SIMULACIÓN DE DATOS EN TIEMPO REAL (cada 5 s)
+   Micro-movimiento en el precio del panel lateral sin re-dibujar
+   el gráfico completo para no interrumpir la interacción del usuario.
+   ================================================================= */
+function tickPrecio() {
+  const cfg  = ACTIVOS[E.ticker];
+  const d    = getDatos(E.ticker, E.dias);
+  const n    = d.closes.length - 1;
+  const ruido = 1 + (Math.random() - 0.5) * cfg.vol * 0.12;
+  d.closes[n] = +(d.closes[n] * ruido).toFixed(2);
+  d.highs[n]  = Math.max(d.highs[n],  d.closes[n]);
+  d.lows[n]   = Math.min(d.lows[n],   d.closes[n]);
+
+  // Recalcular indicadores del último punto y actualizar solo el panel
+  const s20 = sma(d.closes, 20);
+  const s50 = sma(d.closes, 50);
+  const e12 = ema(d.closes, 12);
+  actualizarPanel(E.ticker, d, s20, s50, e12);
+}
+
+/* =================================================================
+   PUNTO DE ENTRADA
+   Se ejecuta cuando el DOM + Plotly ya están disponibles
+   (este script está al final del body, debajo del <script> de Plotly).
+   ================================================================= */
+function init() {
+  // Primer render
+  renderGrafico();
+  renderMovers();
+  tickReloj();
+
+  // Temporizadores
+  setInterval(tickReloj,  1000);
+  setInterval(tickPrecio, 5000);
+
+  // Ocultar overlay de carga con pequeño retardo para que el gráfico esté visible
+  setTimeout(() => {
+    const ov = document.getElementById('app-overlay');
+    ov.classList.add('oculto');
+    setTimeout(() => ov.remove(), 600);
+  }, 800);
+}
+
+// Lanzar init garantizando que el DOM esté listo.
+// Como el script está al final del body, el DOM ya está parseado,
+// pero usamos readyState por si el archivo se inyecta dinámicamente.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
